@@ -1,0 +1,102 @@
+#Thu Aug 26 12:24:10 GMT+08:00 2010
+Product=gRider
+#Fri Mar 12 12:24:10 GMT+08:00 2010
+
+#gRider - Main App
+gRider-CryptType=0
+gRider-UserName=_\u00C2
+gRider-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+gRider-ClientID=GGC_BM001
+gRider-ServerName=172.16.1.6
+gRider-MainServer=172.16.1.6
+gRider-Database=GGC_ISysDBF
+gRider-ComputerID=XX
+gRider-Port=3306
+
+#PETMgr - Main App
+PETMgr-CryptType=0
+PETMgr-UserName=_\u00C2
+PETMgr-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+PETMgr-ClientID=GGC_BGK01
+PETMgr-ServerName=192.168.10.240
+PETMgr-MainServer=192.168.10.240
+PETMgr-Database=GGC_ISysDBF
+PETMgr-ComputerID=XX
+PETMgr-Port=3306
+
+#Android - Main App
+Android-CryptType=0
+Android-ServerName=D:/GGC_Java_Systems/temp/
+Android-Database=GGC_ISysDBF.db
+Android-UserName=
+Android-Password=
+Android-MainServer=
+Android-ClientID=GGC_BM001
+Android-ComputerID=XX
+Android-Port=3306
+
+#IntegSys - Main App
+IntegSys-CryptType=0
+IntegSys-UserName=_\u00C2
+IntegSys-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+IntegSys-ClientID=GGC_BGK01
+IntegSys-ServerName=192.168.10.240
+IntegSys-MainServer=192.168.10.240
+IntegSys-Database=GGC_ISysDBF
+IntegSys-ComputerID=XX
+IntegSys-Port=3306
+
+#TeleMktg - Main App
+TeleMktg-CryptType=0
+TeleMktg-UserName=_\u00C2
+TeleMktg-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+TeleMktg-ClientID=GGC_BM0T1
+TeleMktg-ServerName=192.168.10.240
+TeleMktg-MainServer=192.168.10.240
+TeleMktg-Database=GGC_ISysDBF
+TeleMktg-ComputerID=XX
+TeleMktg-Port=3306
+
+#LRTrackr - Main App
+LRTrackr-CryptType=0
+LRTrackr-UserName=_\u00C2
+LRTrackr-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+LRTrackr-ClientID=GGC_BM001
+LRTrackr-ServerName=192.168.10.16
+LRTrackr-MainServer=192.168.10.240
+LRTrackr-Database=GGC_ISysDBF
+LRTrackr-ComputerID=XX
+LRTrackr-Port=3306
+
+#Telecom - Main App
+Telecom-CryptType=0
+Telecom-UserName=_\u00C2
+Telecom-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+Telecom-ClientID=GTC_BC001
+Telecom-ServerName=192.168.10.16
+Telecom-MainServer=192.168.10.240
+Telecom-Database=GGC_ISysDBF
+Telecom-ComputerID=XX
+Telecom-Port=3306
+
+#General - Main App
+General-CryptType=0
+General-UserName=_\u00C2
+General-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+General-ClientID=GGC_BM001
+General-ServerName=192.168.10.240
+General-MainServer=192.168.10.240
+General-Database=CASys_DBF
+General-ComputerID=XX
+General-Port=3306
+
+#SysUser - Main App
+SysUser-CryptType=0
+SysUser-UserName=_\u00C2
+SysUser-Password=m\u00D7\u00A3\u0090"\u00CE\u00D1r\u00B8\u0017>\u00A7
+SysUser-ClientID=GGC_BM001
+SysUser-ServerName=192.168.10.240
+SysUser-MainServer=192.168.10.240
+SysUser-Database=CASys_DBF
+SysUser-ComputerID=XX
+SysUser-Port=3306
