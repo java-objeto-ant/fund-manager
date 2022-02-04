@@ -257,19 +257,17 @@ public class InventoryCount {
             return false;
         }
         
-        if (RQST_DEPT.contains(p_oApp.getDepartment()) && 
-            !"1".equals((String) getMaster("cReadxxxx"))) {
-            lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
-                    "  cReadxxxx = '1'" +
-                    ", sReadxxxx = " + SQLUtil.toSQL(p_oApp.getEmployeeNo()) +
-                    ", dReadxxxx = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
-                " WHERE sTransNox = " + SQLUtil.toSQL(getMaster("sTransNox"));
-            
-            if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, (String) getMaster("sBranchCd")) <= 0){
-                p_sMessage = "Transaction was not loaded. Unable to update status.";
-                return false;
-            }
-        }
+//        if (RQST_DEPT.contains(p_oApp.getDepartment()) && 
+//            !"1".equals((String) getMaster("cTranStat"))) {
+//            lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+//                    "  cTranStat = '0'" +
+//                " WHERE sTransNox = " + SQLUtil.toSQL(getMaster("sTransNox"));
+//            
+//            if (p_oApp.execu teQuery(lsSQL, MASTER_TABLE, p_sBranchCd, (String) getMaster("sBranchCd")) <= 0){
+//                p_sMessage = "Transaction was not loaded. Unable to update status.";
+//                return false;
+//            }
+//        }
         
         p_nEditMode = EditMode.READY;
         
