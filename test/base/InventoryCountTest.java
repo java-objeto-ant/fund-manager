@@ -54,85 +54,85 @@ public class InventoryCountTest {
     }
     
     @Test
-    public void testCreateNew(){
+    public void testDisplayMasterFields(){
         try{
-            
+            trans.displayMasFields();
         } catch (Exception e){
             fail(e.getMessage());
         }
     }
         
-//    @Test
-//    public void test01SearchInventory(){
-//        boolean isSuccess = false;
-//        try {
-//            if (trans.SearchTransaction("GMC Dagupan", false)){
-//                //get values
-//                isSuccess = true;
-//            } else {
-//                fail(trans.getMessage());
-//                isSuccess = false;
-//            }
-//        } catch (SQLException e) { 
-//            fail(e.getMessage());
-//            isSuccess = false;
-//        }   
-//        assertTrue(isSuccess);
-//    }
+    @Test
+    public void test01SearchInventory(){
+        boolean isSuccess = false;
+        try {
+            if (trans.SearchTransaction("GMC Dagupan", false)){
+                //get values
+                isSuccess = true;
+            } else {
+                fail(trans.getMessage());
+                isSuccess = false;
+            }
+        } catch (SQLException e) { 
+            fail(e.getMessage());
+            isSuccess = false;
+        }   
+        assertTrue(isSuccess);
+    }
     
-//    @Test
-//    public void test02CloseTransaction(){
-//        boolean isSuccess = false;
-//        try {
-//            if (trans.CloseTransaction()){
-//                //get values
-//                isSuccess = true;
-//            } else {
-//                fail(trans.getMessage());
-//                isSuccess = false;
-//            }
-//        } catch (SQLException e) { 
-//            fail(e.getMessage());
-//            isSuccess = false;
-//        }   
-//        assertTrue(isSuccess);
-//    }
+    @Test
+    public void test02CloseTransaction(){
+        boolean isSuccess = false;
+        try {
+            if (trans.CloseTransaction()){
+                //get values
+                isSuccess = true;
+            } else {
+                fail(trans.getMessage());
+                isSuccess = false;
+            }
+        } catch (SQLException e) { 
+            fail(e.getMessage());
+            isSuccess = false;
+        }   
+        assertTrue(isSuccess);
+    }
     
-//    @Test
-//    public void test03SearchInventoryEmptyParameter(){
-//        boolean isSuccess = false;
-//        try {
-//            if (trans.SearchTransaction("", false)){
-//                //get values
-//                isSuccess = true;
-//            } else {
-//                fail(trans.getMessage());
-//                isSuccess = false;
-//            }
-//        } catch (SQLException e) { 
-//            fail(e.getMessage());
-//            isSuccess = false;
-//        }   
-//        assertTrue(isSuccess);
-//    }
-//    
-//    @Test
-//    public void test04CloseTransaction2(){
-//        boolean isSuccess = false;
-//        try {
-//            if (trans.CloseTransaction()){
-//                //get values
-//                isSuccess = true;
-//            } else {
-//                fail(trans.getMessage());
-//                isSuccess = false;
-//            }
-//        } catch (SQLException e) { 
-//            fail(e.getMessage());
-//            isSuccess = false;
-//        }   
-//        assertTrue(isSuccess);
-//    }
+    @Test
+    public void test03SearchInventoryEmptyParameter(){
+        boolean isSuccess = false;
+        try {
+            if (trans.SearchTransaction("", false)){
+                //get values
+                isSuccess = true;
+            } else {
+                fail(trans.getMessage());
+                isSuccess = false;
+            }
+        } catch (SQLException e) { 
+            fail(e.getMessage());
+            isSuccess = false;
+        }   
+        assertTrue(isSuccess);
+    }
+    
+    @Test
+    public void test04CloseTransaction2(){
+        boolean isSuccess = false;
+        try {
+            if (trans.CloseTransaction()){
+                //get values
+                isSuccess = true;
+            } else {
+                fail(trans.getMessage());
+                isSuccess = false;
+            }
+        } catch (SQLException e) { 
+            fail(e.getMessage());
+            isSuccess = false;
+        }   
+        assertTrue(isSuccess);
+    }
     
     
     @Test

@@ -41,6 +41,7 @@ public class InventoryCount {
     private boolean p_bWithUI = true;
 
     private CachedRowSet p_oMaster;
+    private CachedRowSet p_oDetail;
     private LTransaction p_oListener;
    
     public InventoryCount(GRider foApp, String fsBranchCd, boolean fbWithParent){        
@@ -251,27 +252,41 @@ public class InventoryCount {
         p_oMaster.populate(loRS);
         MiscUtil.close(loRS);
         
+        lsSQL = "";
+        
+        //open detail
+        lsSQL = MiscUtil.addCondition(getSQ_Detail(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oDetail = factory.createCachedRowSet();
+        p_oDetail.populate(loRS);
+        MiscUtil.close(loRS);
+        
         p_oMaster.last();
         if (p_oMaster.getRow() <= 0) {
             p_sMessage = "No transaction was loaded.";
             return false;
         }
-        
-//        if (RQST_DEPT.contains(p_oApp.getDepartment()) && 
-//            !"1".equals((String) getMaster("cTranStat"))) {
-//            lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
-//                    "  cTranStat = '0'" +
-//                " WHERE sTransNox = " + SQLUtil.toSQL(getMaster("sTransNox"));
-//            
-//            if (p_oApp.execu teQuery(lsSQL, MASTER_TABLE, p_sBranchCd, (String) getMaster("sBranchCd")) <= 0){
-//                p_sMessage = "Transaction was not loaded. Unable to update status.";
-//                return false;
-//            }
-//        }
-        
+                
         p_nEditMode = EditMode.READY;
         
         return true;
+    }
+    
+    public Object getDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        if (getItemCount() == 0 || fnRow > getItemCount()) return null;
+        
+        p_oDetail.absolute(fnRow);
+        return p_oDetail.getObject(fnIndex);
+    }
+    
+    public Object getDetail(int fnRow, String fsIndex) throws SQLException{
+        return getDetail(fnRow, getColumnIndex(p_oDetail, fsIndex));
+    }
+    
+    public int getItemCount() throws SQLException{
+        p_oDetail.last();
+        return p_oDetail.getRow();
     }
     
     public boolean UpdateTransaction() throws SQLException{
@@ -429,7 +444,7 @@ public class InventoryCount {
         p_oMaster.first();
         return p_oMaster.getObject(fnIndex);
     }
-    
+        
     public Object getMaster(String fsIndex) throws SQLException{
         return getMaster(getColumnIndex(p_oMaster, fsIndex));
     }
@@ -860,4 +875,5 @@ public class InventoryCount {
         
         return lnIndex;
     }
+   
 }
