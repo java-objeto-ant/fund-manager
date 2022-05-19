@@ -852,6 +852,8 @@ public class InventoryCount {
                     ", a.nActCtr03" +
                     ", a.sRemarksx" +
                     ", a.dModified" +
+                    ", e.sBarrcode xBarrcode" +
+                    ", e.sDescript xDescript" +
                     ", IFNULL(b.sWHouseNm, '') xWHouseNm" +
                     ", IFNULL(c.sSectnNme, '') xSectnNme" +
                     ", IFNULL(d.sBinNamex, '') xBinNamex" +
@@ -859,6 +861,7 @@ public class InventoryCount {
                     " LEFT JOIN Warehouse b ON a.sWHouseID = b.sWHouseID" +
                     " LEFT JOIN Section c ON a.sSectnIDx = c.sSectnIDx" +
                     " LEFT JOIN `Bin` d ON a.sBinIDxxx = d.sBinIDxxx" +
+                    " LEFT JOIN Spareparts e ON a.sPartsIDx = e.sPartsIDx" +
                 " ORDER BY a.nEntryNox";
     }
     
