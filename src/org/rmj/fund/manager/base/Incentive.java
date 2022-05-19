@@ -103,6 +103,18 @@ public class Incentive {
             return false;
         }
         
+        if (System.getProperty(DEBUG_MODE).equals("0")){
+            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
+                p_sMessage = "Your employee level is not authorized to use this transaction.";
+                return false;
+            }
+
+            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
+                p_sMessage = "Your account level is not authorized to use this transaction.";
+                return false;
+            }
+        } 
+        
         p_sMessage = "";
         
         createMaster();
@@ -162,7 +174,7 @@ public class Incentive {
                 p_oDetail.updateObject("nEntryNox", lnCtr);
                 p_oDetail.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Incentive_Detail", "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear");
+                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Incentive_Detail", "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear;xIncentve;xDeductnx");
                                
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -192,7 +204,7 @@ public class Incentive {
                 p_oAllctn_Emp.updateObject("sTransNox", lsTransNox);
                 p_oAllctn_Emp.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oAllctn_Emp, "Incentive_Detail_Allocation_Employee", "xEmployNm;xInctvNme");
+                lsSQL = MiscUtil.rowset2SQL(p_oAllctn_Emp, "Incentive_Detail_Allocation_Employee", "xEmployNm;xInctvNme;nTotalAmt");
                 
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Allocation_Employee", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -221,7 +233,7 @@ public class Incentive {
                     p_oDedctn_Emp.updateObject("sTransNox", lsTransNox);
                     p_oDedctn_Emp.updateRow();
 
-                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, "Incentive_Detail_Ded_Allocation_Employee", "xEmployNm");
+                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, "Incentive_Detail_Ded_Allocation_Employee", "xEmployNm;nTotalAmt");
                     
                     if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation_Employee", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                         if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -383,7 +395,7 @@ public class Incentive {
         } else
             lsCondition = "a.sTransNox LIKE " + SQLUtil.toSQL(p_oApp.getBranchCode() + "%");
         
-        if (!lsSQL.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
         
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
@@ -492,12 +504,30 @@ public class Incentive {
         p_oDedctn_Emp.populate(loRS);
         MiscUtil.close(loRS);
         
+        computeEmpTotalIncentiveAmount();
         p_nEditMode = EditMode.READY;
         
         return true;
     }
     
     public boolean UpdateTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        if (System.getProperty(DEBUG_MODE).equals("0")){
+            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
+                p_sMessage = "Your employee level is not authorized to use this transaction.";
+                return false;
+            }
+
+            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
+                p_sMessage = "Your account level is not authorized to use this transaction.";
+                return false;
+            }
+        } 
+        
         if (p_nEditMode != EditMode.READY){
             p_sMessage = "Invalid edit mode.";
             return false;
@@ -547,7 +577,7 @@ public class Incentive {
             }
             
             if (System.getProperty(REQUIRE_CM).equals("1")){
-                if (((String) getMaster("cApprovd2")).equals("1")){
+                if (((String) getMaster("cApprovd2")).equals("0")){
                     return ApprovedTransactionCM();
                 }
             }
@@ -681,6 +711,11 @@ public class Incentive {
                 p_oApp.getDepartment().equals(AUDITOR))){
                 p_sMessage = "Only CM Department can cancel confirmed transactions.";
                 return false;
+            } else {
+                if ("1".equals((String) getMaster("cApprovd2"))){
+                    p_sMessage = "This transaction was already CM Confirmed. Unable to disapprove.";
+                    return false;
+                }
             }
         }
         
@@ -903,15 +938,13 @@ public class Incentive {
                 p_oAllctn.updateRow();   
                 break;
             case 7: //nInctvAmt
-                if (!((double) getIncentiveInfo(fnRow, 101) > 0.00 ||
-                    (double) getIncentiveInfo(fnRow, 102) > 0.00)){
-                    if (StringUtil.isNumeric(String.valueOf(foValue))) 
-                        p_oAllctn.updateString(fnIndex, EncryptAmount((double) foValue));
-                    else
-                        p_oAllctn.updateString(fnIndex, EncryptAmount(0.00));
+                if (StringUtil.isNumeric(String.valueOf(foValue))) 
+                    p_oAllctn.updateString(fnIndex, EncryptAmount((double) foValue));
+                else
+                    p_oAllctn.updateString(fnIndex, EncryptAmount(0.00));
 
-                    p_oAllctn.updateRow();   
-                }
+                p_oAllctn.updateRow();   
+                    
                 computeEmpTotalIncentiveAmount();
                 break;
             case 8: //sRemarksx
@@ -1003,6 +1036,43 @@ public class Incentive {
         setIncentiveEmployeeAllocationInfo(p_oAllctn_Emp.getMetaData().getColumnLabel(fnIndex), fsInctveCD, fsEmployID, foValue);
     }
     
+    public void resetIncentiveEmployeeAllocation(String fsInctveCD) throws SQLException {
+        if (getItemCount() == 0 || getIncentiveCount() == 0) return;
+        
+        int lnRow = getIncentiveEmployeeAllocationCount();
+        
+        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            if (fsInctveCD.equals(p_oAllctn_Emp.getString("sInctveCD"))){
+                p_oAllctn_Emp.absolute(lnCtr);
+                p_oAllctn_Emp.updateDouble("nAllcPerc", 0.00);
+                p_oAllctn_Emp.updateString("nAllcAmtx", EncryptAmount(0.00));
+                p_oAllctn_Emp.updateRow();
+            }
+        }
+        computeEmpTotalIncentiveAmount();
+    }
+    
+    public void resetDeductionEmployeeAllocation(int fnEntryNox) throws SQLException{
+        if (getItemCount() == 0 || getDeductionCount()== 0) return;
+        
+        int lnCtr;
+        
+        //find record based on deduction entry no and employee id
+        int lnRow = getDeductionEmployeeAllocationCount();
+        
+        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            p_oDedctn_Emp.absolute(lnCtr);
+            
+            if (fnEntryNox == p_oDedctn_Emp.getInt("nEntryNox")){
+                p_oDedctn_Emp.absolute(lnCtr);
+                p_oDedctn_Emp.updateDouble("nAllcPerc", 0.00);
+                p_oDedctn_Emp.updateString("nAllcAmtx", EncryptAmount(0.00));
+                p_oDedctn_Emp.updateRow();
+            }
+        }
+        computeEmpTotalIncentiveAmount();
+    }
+    
     public void setIncentiveEmployeeAllocationInfo(String fsIndex, String fsInctveCD, String fsEmployID, Object foValue) throws SQLException{
         if (getItemCount() == 0 || getIncentiveCount() == 0) return;
         
@@ -1042,8 +1112,6 @@ public class Incentive {
                                 p_oAllctn_Emp.updateString(fsIndex, EncryptAmount((double) foValue));
                             else
                                 p_oAllctn_Emp.updateString(fsIndex, EncryptAmount(0.00));
-                            
-                            computeEmpTotalIncentiveAmount();
                         }                 
                         break;
                     case "sRemarksx":
@@ -1122,15 +1190,13 @@ public class Incentive {
         
         switch (fnIndex){
             case 4: //nDedctAmt
-                if (!((double) getDeductionInfo(fnRow, 101) > 0.00 ||
-                    (double) getDeductionInfo(fnRow, 102) > 0.00)){
-                    if (StringUtil.isNumeric(String.valueOf(foValue))) 
-                        p_oDedctn.updateObject(fnIndex, EncryptAmount((double) foValue));
-                    else
-                        p_oDedctn.updateObject(fnIndex, EncryptAmount(0.00));
+                if (StringUtil.isNumeric(String.valueOf(foValue))) 
+                    p_oDedctn.updateObject(fnIndex, EncryptAmount((double) foValue));
+                else
+                    p_oDedctn.updateObject(fnIndex, EncryptAmount(0.00));
 
-                    p_oDedctn.updateRow();   
-                }
+                p_oDedctn.updateRow();   
+                
                 computeEmpTotalIncentiveAmount();
                 break;
             default:
@@ -1296,7 +1362,7 @@ public class Incentive {
                 if (fsValue.equals((String) getIncentiveInfo(lnCtr, "xInctvNme"))) return true;
             }
         }
-        
+
         String lsSQL = "SELECT" +
                             "  sInctveCD" +
                             ", sInctveDs" +
@@ -1596,11 +1662,14 @@ public class Incentive {
         int lnAlcRow;
         
         int lnCtr1, lnCtr2, lnCtr3;
-        double lnTotalAmt, lnPercentx, lnAllcAmtx;
+        double lnTotalAmt, lnPercentx, lnAllcAmtx, lnIncentve, lnDeductnx;
+        double lnTotalInc, lnTotalDed;       
         
         for (lnCtr1 = 1; lnCtr1 <= lnDetRow; lnCtr1++){
             p_oDetail.absolute(lnCtr1);
             
+            lnTotalInc = 0.00;
+            lnTotalDed = 0.00;
             lnTotalAmt = 0.00;
             
             //incentive
@@ -1617,31 +1686,43 @@ public class Incentive {
                 for (lnCtr3 = 1; lnCtr3 <= lnAlcRow; lnCtr3++){
                     p_oAllctn_Emp.absolute(lnCtr3);
                     
+                    lnIncentve = 0.00;
                     if (p_oAllctn.getString("sInctveCD").equals(p_oAllctn_Emp.getString("sInctveCD")) &&
                         p_oDetail.getString("sEmployID").equals(p_oAllctn_Emp.getString("sEmployID"))){
                         
                         switch (p_oAllctn.getString("xByPercnt")){
                             case "0":
-                                lnTotalAmt += DecryptAmount(p_oAllctn_Emp.getString("nAllcAmtx"));        
+                                lnIncentve = DecryptAmount(p_oAllctn_Emp.getString("nAllcAmtx"));
+                                
+                                lnTotalAmt += lnIncentve;
                                 lnTotalAmt = lnTotalAmt * 100 / 100; //round off
                                 break;
                             case "1":
                                 lnPercentx = p_oAllctn_Emp.getDouble("nAllcPerc") / 100;
                                 lnPercentx = lnPercentx * DecryptAmount(p_oAllctn.getString("nInctvAmt"));
-
-                                lnTotalAmt += lnPercentx;
+                                
+                                lnIncentve = lnPercentx * 100 / 100;
+                                
+                                lnTotalAmt += lnIncentve;
                                 lnTotalAmt = lnTotalAmt * 100 / 100; //round off
                                 break;
-                            case "2":    
-                                lnTotalAmt += DecryptAmount(p_oAllctn_Emp.getString("nAllcAmtx"));        
+                            case "2": 
+                                lnIncentve = DecryptAmount(p_oAllctn_Emp.getString("nAllcAmtx"));
                                 
                                 lnPercentx = p_oAllctn_Emp.getDouble("nAllcPerc") / 100;
                                 lnPercentx = lnPercentx * (DecryptAmount(p_oAllctn.getString("nInctvAmt")) - lnAllcAmtx);
                                 
-                                lnTotalAmt += lnPercentx;
+                                lnIncentve += lnPercentx * 100 / 100;
+                                
+                                lnTotalAmt += lnIncentve;
                                 lnTotalAmt = lnTotalAmt * 100 / 100; //round off
                                 break;
                         }                
+                        
+                        p_oAllctn_Emp.updateObject("nTotalAmt", lnIncentve);
+                        p_oAllctn_Emp.updateRow();
+                        
+                        lnTotalInc += lnIncentve;
                     } 
                 }
             }
@@ -1652,29 +1733,41 @@ public class Incentive {
             for (lnCtr2 = 1; lnCtr2 <= lnIncRow; lnCtr2++){
                 p_oDedctn.absolute(lnCtr2);
                 
-                lnAllcAmtx = getAllocatedIncentive(lnCtr2, "2");
+                lnAllcAmtx = getAllocatedDeduction(lnCtr2, "2");
                 
                 for (lnCtr3 = 1; lnCtr3 <= lnAlcRow; lnCtr3++){
                     p_oDedctn_Emp.absolute(lnCtr3);
                     
+                    lnDeductnx = 0.00;
                     if (p_oDedctn.getInt("nEntryNox") == p_oDedctn_Emp.getInt("nEntryNox") &&
                         p_oDetail.getString("sEmployID").equals(p_oDedctn_Emp.getString("sEmployID"))){
                         
-                            lnTotalAmt -= DecryptAmount(p_oDedctn_Emp.getString("nAllcAmtx"));        
+                        lnDeductnx = DecryptAmount(p_oDedctn_Emp.getString("nAllcAmtx"));
 
-                            lnPercentx = p_oDedctn_Emp.getDouble("nAllcPerc") / 100;
-                            lnPercentx = lnPercentx * (DecryptAmount(p_oDedctn.getString("nDedctAmt")) - lnAllcAmtx);
+                        lnPercentx = p_oDedctn_Emp.getDouble("nAllcPerc") / 100;
+                        lnPercentx = lnPercentx * (DecryptAmount(p_oDedctn.getString("nDedctAmt")) - lnAllcAmtx);
 
-                            lnTotalAmt -= lnPercentx;
-                            lnTotalAmt = lnTotalAmt * 100 / 100; //round off
-                            break;
+                        lnDeductnx += lnPercentx * 100 / 100;
+                        
+                        lnTotalAmt -= lnDeductnx;
+                        lnTotalAmt = lnTotalAmt * 100 / 100; //round off
+                        
+                        p_oDedctn_Emp.updateObject("nTotalAmt", lnDeductnx);
+                        p_oDedctn_Emp.updateRow();
+                        
+                        lnTotalDed += lnDeductnx;
+                        break;
                     } 
                 }
             }
             
-            p_oDetail.updateString("nTotalAmt", EncryptAmount(lnTotalAmt));
+            p_oDetail.updateDouble("xIncentve", lnTotalInc);
+            p_oDetail.updateDouble("xDeductnx", lnTotalDed);
+            p_oDetail.updateString("nTotalAmt", EncryptAmount(lnTotalInc - lnTotalDed));
             p_oDetail.updateRow();
         }
+        
+        if (p_oListener != null) p_oListener.DetailRetreive(0, 0, "");
     }
     
     private double getAllocatedIncentive(int fnRow, String fcByPercnt) throws SQLException{        
@@ -1730,6 +1823,14 @@ public class Incentive {
     }
     
     private boolean addIncentive(String fsCode, String fsDescript, String fcByPercnt) throws SQLException{
+        int lnCtr;
+        int lnRow = getIncentiveCount();
+        
+        //validate if incentive is already added
+        for (lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            if (fsCode.equals((String) getIncentiveInfo(lnCtr, "sInctveCD"))) return true;
+        }
+        
         p_oAllctn.last();
         p_oAllctn.moveToInsertRow();
 
@@ -1743,9 +1844,9 @@ public class Incentive {
         p_oAllctn.moveToCurrentRow();
         
         //add employee allocation for this incentive
-        int lnRow = getItemCount();
+        lnRow = getItemCount();
         
-        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr ++){
+        for (lnCtr = 1; lnCtr <= lnRow; lnCtr ++){
             p_oAllctn_Emp.last();
             p_oAllctn_Emp.moveToInsertRow();
 
@@ -1813,7 +1914,7 @@ public class Incentive {
     private void createDetailDeductionAllocEmp() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(6);
+        meta.setColumnCount(7);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -1841,6 +1942,10 @@ public class Incentive {
         meta.setColumnName(6, "xEmployNm");
         meta.setColumnLabel(6, "xEmployNm");
         meta.setColumnType(6, Types.VARCHAR);
+        
+        meta.setColumnName(7, "nTotalAmt");
+        meta.setColumnLabel(7, "nTotalAmt");
+        meta.setColumnType(7, Types.DOUBLE);
         
         p_oDedctn_Emp = new CachedRowSetImpl();
         p_oDedctn_Emp.setMetaData(meta);        
@@ -1877,7 +1982,7 @@ public class Incentive {
     private void createDetailAllocationEmp() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(7);
+        meta.setColumnCount(8);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -1910,6 +2015,10 @@ public class Incentive {
         meta.setColumnName(7, "xInctvNme");
         meta.setColumnLabel(7, "xInctvNme");
         meta.setColumnType(7, Types.VARCHAR);        
+        
+        meta.setColumnName(8, "nTotalAmt");
+        meta.setColumnLabel(8, "nTotalAmt");
+        meta.setColumnType(8, Types.DOUBLE);
         
         p_oAllctn_Emp = new CachedRowSetImpl();
         p_oAllctn_Emp.setMetaData(meta);
@@ -1971,7 +2080,7 @@ public class Incentive {
     private void createDetail() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(8);
+        meta.setColumnCount(10);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -2007,6 +2116,14 @@ public class Incentive {
         meta.setColumnName(8, "xSrvcYear");
         meta.setColumnLabel(8, "xSrvcYear");
         meta.setColumnType(8, Types.VARCHAR);
+        
+        meta.setColumnName(9, "xIncentve");
+        meta.setColumnLabel(9, "xIncentve");
+        meta.setColumnType(9, Types.DOUBLE);
+        
+        meta.setColumnName(10, "xDeductnx");
+        meta.setColumnLabel(10, "xDeductnx");
+        meta.setColumnType(10, Types.DOUBLE);
         
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
@@ -2045,6 +2162,8 @@ public class Incentive {
             p_oDetail.updateString("xPositnNm", loRS.getString("xPositnNm"));
             p_oDetail.updateString("xSrvcYear", loRS.getString("xSrvcYear"));
             p_oDetail.updateString("nTotalAmt", EncryptAmount(0.00));
+            p_oDetail.updateDouble("xIncentve", 0.00);
+            p_oDetail.updateDouble("xDeductnx", 0.00);
             
             p_oDetail.insertRow();
             p_oDetail.moveToCurrentRow();
@@ -2266,8 +2385,9 @@ public class Incentive {
             }
             
             lsSQL = " AND a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else 
+        } else{            
             lsSQL = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
+        }
                 
         lsSQL = "SELECT" + 
                     "  a.sTransNox" +
@@ -2306,6 +2426,8 @@ public class Incentive {
                     ", IFNULL(d.sEmpLevNm, '') xEmpLevNm" +
                     ", IFNULL(e.sPositnNm, '') xPositnNm" +
                     ", IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(b.dStartEmp, b.dHiredxxx)) / 365), '') xSrvcYear" +
+                    ", 0.00 xIncentve" +
+                    ", 0.00 xDeductnx" +
                 " FROM Incentive_Detail a" +
                     ", Employee_Master001 b" +
                         " LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID" +
@@ -2344,6 +2466,7 @@ public class Incentive {
                     ", IFNULL(e.sEmpLevNm, '') xEmpLevNm" +
                     ", IFNULL(f.sPositnNm, '') xPositnNm" +
                     ", IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(b.dStartEmp, b.dHiredxxx)) / 365), '') xSrvcYear" +
+                    ", 0.00 nTotalAmt" +
                 " FROM Incentive_Detail_Allocation_Employee a" +
                         " LEFT JOIN Incentive c ON a.sInctveCD = c.sInctveCD" +
                     ", Employee_Master001 b" +
@@ -2371,6 +2494,7 @@ public class Incentive {
                     ", a.nAllcPerc" +
                     ", a.nAllcAmtx" +
                     ", IFNULL(b.sCompnyNm, '') xEmployNm" +
+                    ", 0.00 nTotalAmt" +
                 " FROM Incentive_Detail_Ded_Allocation_Employee a" +
                     " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID";
     }
@@ -2391,8 +2515,8 @@ public class Incentive {
     
     private void loadConfig(){
         //update the value on configuration before deployment
-        System.setProperty(DEBUG_MODE, "1"); 
-        System.setProperty(REQUIRE_CSS, "1");
+        System.setProperty(DEBUG_MODE, "0"); 
+        System.setProperty(REQUIRE_CSS, "0");
         System.setProperty(REQUIRE_CM, "1");
         System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
     }
