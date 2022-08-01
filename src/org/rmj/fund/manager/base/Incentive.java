@@ -2128,24 +2128,45 @@ public class Incentive {
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
         
-        String lsSQL = "SELECT" +
-                            "  a.sEmployID" +
-                            ", IFNULL(b.sCompnyNm, '') xEmployNm" +
-                            ", IFNULL(c.sEmpLevNm, '') xEmpLevNm" +
-                            ", IFNULL(d.sPositnNm, '') xPositnNm" +
-                            ", IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(a.dStartEmp, a.dHiredxxx)) / 365), '') xSrvcYear" +
-                        " FROM Employee_Master001 a" +
-                            " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID" +
-                            " LEFT JOIN Employee_Level c ON a.sEmpLevID = c.sEmpLevID" +
-                            " LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID" +
-                        " WHERE a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
-                            " AND a.cRecdStat = '1'" +
-                            " AND ISNULL(a.dFiredxxx)" +
-                        " ORDER BY a.sEmpLevID DESC, IFNULL(a.dStartEmp, a.dHiredxxx), b.sCompnyNm";
+        String lsSQL = "SELECT " +
+        "      a.sEmployID " +
+        "    , IFNULL(b.sCompnyNm, '') xEmployNm " +
+        "    , IFNULL(c.sEmpLevNm, '') xEmpLevNm " +
+        "    , IFNULL(d.sPositnNm, '') xPositnNm " +
+        "    , IFNULL(a.sEmpLevID, '') xEmpLevID " +
+        "    , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
+        "    , IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(a.dStartEmp, a.dHiredxxx)) / 365), '') xSrvcYear " +
+        " FROM Employee_Master001 a " +
+        "     LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
+        "     LEFT JOIN Employee_Level c ON a.sEmpLevID = c.sEmpLevID " +
+        "     LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
+        " WHERE a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
+        "     AND a.cRecdStat = '1' " +
+        "     AND ISNULL(a.dFiredxxx) " +
+        " UNION SELECT" +
+        "      h.sEmployID " +
+        "    , IFNULL(i.sCompnyNm, '') xEmployNm " +
+        "    , IFNULL(j.sEmpLevNm, '') xEmpLevNm " +
+        "    , IFNULL(k.sPositnNm, '') xPositnNm " +
+        "    , IFNULL(h.sEmpLevID, '') xEmpLevID " +
+        "    , IFNULL(h.sDeptIDxx, '') sDeptIDxx " +
+        "    , IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(h.dStartEmp, h.dHiredxxx)) / 365), '') xSrvcYear" +
+        "     FROM  Branch e" +
+        "	 ,Branch_Others f " +
+        "	 , Branch_Area g " +
+        "     LEFT JOIN Employee_Master001 h " +
+        "	ON g.sAreaMngr = h.sEmployID   " +
+        "     LEFT JOIN Client_Master i ON h.sEmployID = i.sClientID " +
+        "     LEFT JOIN Employee_Level j ON h.sEmpLevID = j.sEmpLevID " +
+        "     LEFT JOIN `Position` k ON h.sPositnID = k.sPositnID" +
+        "	WHERE e.sBranchCd = f.sBranchCd" +
+        "	AND  f.sAreaCode = g.sAreaCode" +
+        "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
+        " ORDER BY xEmpLevID DESC, xEmployNm";   
         
         p_oMaster.first();
         if (!p_oMaster.getString("sDeptIDxx").isEmpty())
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
+            lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
         
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
