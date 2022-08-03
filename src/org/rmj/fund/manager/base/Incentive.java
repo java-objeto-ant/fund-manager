@@ -1439,6 +1439,8 @@ public class Incentive {
                         fbByCode ? 0 : 1);
             
             if (loJSON != null){
+                System.out.println("sDeptIDxx = " +(String) loJSON.get("sDeptIDxx"));
+                System.out.println("sDeptName = " +(String) loJSON.get("sDeptName"));
                 p_oMaster.updateString("sDeptIDxx", (String) loJSON.get("sDeptIDxx"));
                 p_oMaster.updateString("xDeptName", (String) loJSON.get("sDeptName"));
                 p_oMaster.updateRow();
@@ -2142,8 +2144,9 @@ public class Incentive {
         "     LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
         " WHERE a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
         "     AND a.cRecdStat = '1' " +
-        "     AND ISNULL(a.dFiredxxx) " +
-        " UNION SELECT" +
+        "     AND ISNULL(a.dFiredxxx) ";
+      
+        String lsSQL2 =   " UNION SELECT" +
         "      h.sEmployID " +
         "    , IFNULL(i.sCompnyNm, '') xEmployNm " +
         "    , IFNULL(j.sEmpLevNm, '') xEmpLevNm " +
@@ -2163,11 +2166,12 @@ public class Incentive {
         "	AND  f.sAreaCode = g.sAreaCode" +
         "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
         " ORDER BY xEmpLevID DESC, xEmployNm";   
-        
         p_oMaster.first();
         if (!p_oMaster.getString("sDeptIDxx").isEmpty())
             lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
-        
+            lsSQL = lsSQL + lsSQL2;
+            lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
+            
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
         int lnRow = 1;
@@ -2186,11 +2190,13 @@ public class Incentive {
             p_oDetail.updateDouble("xIncentve", 0.00);
             p_oDetail.updateDouble("xDeductnx", 0.00);
             
+            
             p_oDetail.insertRow();
             p_oDetail.moveToCurrentRow();
             
             lnRow++;
         }
+        System.out.println("count = " + lnRow);
     }
     
     private void createMaster() throws SQLException{
