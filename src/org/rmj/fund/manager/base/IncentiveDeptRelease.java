@@ -1,9 +1,11 @@
 package org.rmj.fund.manager.base;
 
+
 import com.sun.rowset.CachedRowSetImpl;
 import java.sql.ResultSet;
-import java.sql.Types;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Date;
 import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
@@ -23,11 +25,16 @@ import org.rmj.appdriver.constants.TransactionStatus;
 import org.rmj.appdriver.constants.UserRight;
 import org.rmj.fund.manager.parameters.IncentiveBankInfo;
 
-/**
- * @author Michael Cuison
- * @since October 11, 2021
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-public class DeptIncentive {
+
+/**
+ *
+ * @author User
+ */
+public class IncentiveDeptRelease {
     private final String FINANCE = "028";
     private final String AUDITOR = "034";
     private final String COLLECTION = "022";
@@ -54,7 +61,7 @@ public class DeptIncentive {
     private CachedRowSet p_oDetail;
     private LMasDetTrans p_oListener;
    
-    public DeptIncentive(GRider foApp, String fsBranchCd, boolean fbWithParent){        
+    public IncentiveDeptRelease(GRider foApp, String fsBranchCd, boolean fbWithParent){        
         p_oApp = foApp;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;        
@@ -256,29 +263,30 @@ public class DeptIncentive {
         String lsSQL = getSQ_Master();
         String lsCondition = "";
         
-//        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
-//            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment()))
-//                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
-//        } else
-//            lsCondition = "a.sDeptIDxx LIKE " + SQLUtil.toSQL(p_oApp.getDepartment() + "%");
-//        
-//        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
-//        
+        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
+            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment()))
+                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+        } else
+            lsCondition = "a.sDeptIDxx LIKE " + SQLUtil.toSQL(p_oApp.getDepartment() + "%");
+        
+        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+        
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
-                                    p_oApp, 
-                                    lsSQL, 
-                                    fsValue, 
-                                    "Trans. No.»Department»Date Effective»Remarks", 
-                                    "sTransNox»xDeptName»dEffctive»sRemarksx", 
-                                    "a.sTransNox»b.sDeptName»a.dEffctive»a.sRemarksx", 
-                                    fbByCode ? 0 : 1);
-                if (loJSON != null) 
-                    return OpenTransaction((String) loJSON.get("sTransNox"));
-                else {
-                    p_sMessage = "No record selected.";
-                    return false;
-                }
+                                p_oApp, 
+                                lsSQL, 
+                                fsValue, 
+                                "Trans. No.»Department»Date Effective»Remarks", 
+                                "sTransNox»xDeptName»dEffctive»sRemarksx", 
+                                "a.sTransNox»b.sDeptName»a.dEffctive»a.sRemarksx", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null) 
+                return OpenTransaction((String) loJSON.get("sTransNox"));
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
         }
         
         if (fbByCode)
@@ -1033,7 +1041,7 @@ public class DeptIncentive {
     private void createDetail() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(11);
+        meta.setColumnCount(9);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -1073,37 +1081,27 @@ public class DeptIncentive {
         meta.setColumnName(9, "xPositnNm");
         meta.setColumnLabel(9, "xPositnNm");
         meta.setColumnType(9, Types.VARCHAR);
-        meta.setColumnDisplaySize(9, 128);
-        
-        meta.setColumnName(10, "xBankAcct");
-        meta.setColumnLabel(10, "xBankAcct");
-        meta.setColumnType(10, Types.VARCHAR);
-        meta.setColumnDisplaySize(10, 128);
-        
-        meta.setColumnName(11, "xBankName");
-        meta.setColumnLabel(11, "xBankName");
-        meta.setColumnType(11, Types.VARCHAR);
-        meta.setColumnDisplaySize(11, 128);
         
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
         
         String lsSQL = "SELECT " +
-                "            a.sEmployID " +
-                "          , IFNULL(b.sCompnyNm, '') xEmployNm " +
-                "          , IFNULL(d.sPositnNm, '') xPositnNm " +
-                "          , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
-                "          , IFNULL(e.sBankAcct, '') xBankAcct " +
-                "          , IFNULL(f.sBankName, '') xBankName " +
-                "       FROM Employee_Master001 a " +
-                "           LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
-                "           LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
-                "           LEFT JOIN Employee_Incentive_Bank_Info e ON a.sEmployID = e.sEmployID " +
-                "           LEFT JOIN Banks f ON e.sBankIDxx = f.sBankIDxx " +
-                "       WHERE a.sBranchCd =  " + SQLUtil.toSQL(p_sBranchCd) +
-                "       AND ISNULL(a.dFiredxxx) " + 
-                "     GROUP BY a.sEmployID  " +
-                "       ORDER BY xEmployNm";   
+        "      a.sEmployID " +
+        "    , IFNULL(b.sCompnyNm, '') xEmployNm " +
+        "    , IFNULL(d.sPositnNm, '') xPositnNm " +
+//        "    , IFNULL(a.sEmpLevID, '') xEmpLevID " +
+        "    , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
+        "    , IFNULL(f.sBankAcct, '') xBankAcct " +
+//        "    , IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(a.dStartEmp, a.dHiredxxx)) / 365), '') xSrvcYear " +
+        " FROM Employee_Master001 a " +
+        "     LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
+//        "     LEFT JOIN Employee_Level c ON a.sEmpLevID = c.sEmpLevID " +
+        "     LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
+              " LEFT JOIN `Employee_Incentive_Bank_Info` f ON a.sEmployID = f.sEmployID" +
+        " WHERE a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
+        "     AND a.cRecdStat = '1' " +
+        "     AND ISNULL(a.dFiredxxx) " +
+        " ORDER BY xEmployNm";   
 //      
 //        String lsSQL2 =   " UNION SELECT" +
 //        "      h.sEmployID " +
@@ -1140,8 +1138,6 @@ public class DeptIncentive {
             p_oDetail.updateString("xEmployNm", loRS.getString("xEmployNm"));
 //            p_oDetail.updateString("xEmpLevNm", loRS.getString("xEmpLevNm"));
             p_oDetail.updateString("xPositnNm", loRS.getString("xPositnNm"));
-            p_oDetail.updateString("xBankAcct", loRS.getString("xBankAcct"));
-            p_oDetail.updateString("xBankName", loRS.getString("xBankName"));
             p_oDetail.updateObject("dLastUpdt", p_oApp.getServerDate());
             p_oDetail.updateObject("sOldAmtxx", 0.00);
             p_oDetail.updateObject("sNewAmtxx", 0.00);
@@ -1337,48 +1333,25 @@ public class DeptIncentive {
     }
     
     private String getSQ_Detail(){
-        return " SELECT  " +
-            "  IFNULL(a.sTransNox,'') sTransNox  " +
-            ", IFNULL(a.nEntryNox,'') nEntryNox  " +
-            ", IFNULL(a.sEmployID,'') sEmployID  " +
-            ", IFNULL(a.dLastUpdt,'') dLastUpdt  " +
-            ", IFNULL(a.sOldAmtxx,0) sOldAmtxx  " +
-            ", IFNULL(a.sNewAmtxx,0) sNewAmtxx  " +
-            ", IFNULL(a.sRemarksx,'') sRemarksx  " +
-            ", IFNULL(c.sCompnyNm,'') xEmployNm   " +
-            ", IFNULL(e.sPositnNm, '') xPositnNm   " +
-            ", IFNULL(d.sBankAcct, '') xBankAcct  " +
-            ", IFNULL(f.sBankName, '') xBankName   " +
-            " FROM Department_Incentive_Detail a  " +
-            ", Employee_Master001 b   " +
-            "     LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID  " +
-            "     LEFT JOIN `Position` e ON b.sPositnID = e.sPositnID  " +
-            "     LEFT JOIN Employee_Incentive_Bank_Info d ON b.sEmployID = d.sEmployID  " +
-            "     LEFT JOIN `Banks` f ON d.sBankIDxx = f.sBankIDxx  " +
-            " WHERE a.sEmployID = b.sEmployID   " +
-            " GROUP BY a.sEmployID   " +
-            " ORDER BY sTransNox,xEmployNm";
-//        return "SELECT " +
-//                "      IFNULL(a.sTransNox,'') sTransNox " +
-//                "    , IFNULL(a.nEntryNox,'') nEntryNox " +
-//                "    , IFNULL(a.sEmployID,'') sEmployID " +
-//                "    , IFNULL(a.dLastUpdt,'') dLastUpdt " +
-//                "    , IFNULL(a.sOldAmtxx,0) sOldAmtxx " +
-//                "    , IFNULL(a.sNewAmtxx,0) sNewAmtxx " +
-//                "    , IFNULL(a.sRemarksx,'') sRemarksx " +
-//                "    , IFNULL(c.sCompnyNm,'') xEmployNm  " +
-//                "    , IFNULL(e.sPositnNm, '') xPositnNm  " +
-//                "    , IFNULL(d.sBankAcct, '') xBankAcct " +
-//                "    , IFNULL(f.sActNamex, '') xActNamex  " +
-//                "     FROM Department_Incentive_Detail a " +
-//                "         LEFT JOIN Employee_Incentive_Bank_Info d ON a.sEmployID = d.sEmployID " +
-//                "         LEFT JOIN Bank_Account f ON d.sBankIDxx = f.sBankIDxx " +
-//                "    , Employee_Master001 b  " +
-//                "         LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID " +
-//                "         LEFT JOIN `Position` e ON b.sPositnID = e.sPositnID " +
-//                "     WHERE a.sEmployID = b.sEmployID  " +
-//                "     GROUP BY a.sEmployID  " +
-//                "     ORDER BY nEntryNox ";
+        return "SELECT" +
+                    "  IFNULL(a.sTransNox,'') sTransNox" +
+                    ", IFNULL(a.nEntryNox,'') nEntryNox" +
+                    ", IFNULL(a.sEmployID,'') sEmployID" +
+                    ", IFNULL(a.dLastUpdt,'') dLastUpdt" +
+                    ", IFNULL(a.sOldAmtxx,0) sOldAmtxx" +
+                    ", IFNULL(a.sNewAmtxx,0) sNewAmtxx" +
+                    ", IFNULL(a.sRemarksx,'') sRemarksx" +
+                    ", IFNULL(c.sCompnyNm,'') xEmployNm " +
+                    ", IFNULL(e.sPositnNm, '') xPositnNm " +
+                    ", IFNULL(f.sBankAcct, '') xBankAcct " +
+                " FROM Department_Incentive_Detail a" +
+              " LEFT JOIN `Employee_Incentive_Bank_Info` f ON a.sEmployID = f.sEmployID" +
+                    ", Employee_Master001 b " +
+                        " LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID" +
+//                        " LEFT JOIN Employee_Level d ON b.sEmpLevID = d.sEmpLevID" +
+                        " LEFT JOIN `Position` e ON b.sPositnID = e.sPositnID" +
+                " WHERE a.sEmployID = b.sEmployID " +
+                " ORDER BY nEntryNox ";
     }
     
     
