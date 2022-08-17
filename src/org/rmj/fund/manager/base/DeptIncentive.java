@@ -151,7 +151,7 @@ public class DeptIncentive {
             
             lsSQL = MiscUtil.rowset2SQL(p_oMaster, 
                     "Department_Incentive_Master",
-                    "xBranchNm;xDeptName;xInctvNme");
+                    "xBranchNm;xDeptName;xInctvNme;xBankName;xBankAcct");
             
             if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Master", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                 if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -167,7 +167,7 @@ public class DeptIncentive {
                 p_oDetail.updateObject("dLastUpdt", p_oApp.getServerDate());
                 p_oDetail.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Department_Incentive_Detail", "xEmployNm;xPositnNm");
+                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Department_Incentive_Detail", "xEmployNm;xPositnNm;xBankName;xBankAcct");
                                
                 if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Detail", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
