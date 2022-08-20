@@ -37,6 +37,7 @@ public class DeptIncentive {
     private final String REQUIRE_CSS = "app.require.css.approval";
     private final String REQUIRE_CM = "app.require.cm.approval";
     private final String REQUIRE_BANK_ON_APPROVAL = "app.require.bank.on.approval";
+    private final String RELEASE_TABLE = "Incentive_Releasing_Master";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -52,8 +53,8 @@ public class DeptIncentive {
 
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
+    private CachedRowSet p_oRelease;
     private LMasDetTrans p_oListener;
-   
     public DeptIncentive(GRider foApp, String fsBranchCd, boolean fbWithParent){        
         p_oApp = foApp;
         p_sBranchCd = fsBranchCd;
@@ -231,6 +232,66 @@ public class DeptIncentive {
             p_nEditMode = EditMode.UNKNOWN;
             return true;
         }
+    }
+    
+    
+    public boolean ReleaseTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_nEditMode != EditMode.ADDNEW){
+            p_sMessage = "Invalid edit mode detected.";
+            return false;
+        }
+        
+        if (!isEntryOK()){
+            p_sMessage = "No record was tagged for release.";
+            return false;
+        }
+        
+        String lsTransNox = MiscUtil.getNextCode(RELEASE_TABLE, "sTransNox", true, p_oApp.getConnection(), p_sBranchCd);
+        
+        if (!p_bWithParent) p_oApp.beginTrans();
+        
+        String lsSQL;
+        int lnCtr, lnCtr2, lnCtr3 = 0;
+        double lnTranTotl = 0.00;
+        
+        lsSQL = "UPDATE Department_Incentive_Master SET" +
+                            "  sBatchNox = " + SQLUtil.toSQL(lsTransNox) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) p_oMaster.getString("sTransNox"));
+        
+        if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Master", p_sBranchCd, ((String) p_oMaster.getString("sTransNox")).substring(0, 4)) <= 0){
+            if (!p_bWithParent) p_oApp.rollbackTrans();
+            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+            return false;
+        }
+       for (lnCtr2 = 1; lnCtr2 <= getItemCount(); lnCtr2++){
+            lnTranTotl += (double) getDetail(lnCtr2, "sNewAmtxx");
+        }
+        p_oMaster.first();
+        p_oMaster.updateObject("sTransNox", lsTransNox);
+        p_oMaster.updateObject("nTranTotl", lnTranTotl);
+        p_oMaster.updateObject("nEntryNox", getItemCount());
+        p_oMaster.updateObject("sModified", p_oApp.getUserID());
+        p_oMaster.updateObject("dModified", p_oApp.getServerDate());        
+        
+        lsSQL = MiscUtil.rowset2SQL(p_oMaster, RELEASE_TABLE, "");
+        
+        if (p_oApp.executeQuery(lsSQL, "MASTER_TABLE", p_sBranchCd, "") <= 0){
+            if (!p_bWithParent) p_oApp.rollbackTrans();
+            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+            return false;
+        }
+        
+        if (!p_bWithParent) p_oApp.commitTrans();
+        
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
     }
     
     public boolean SearchTransaction(String fsValue, boolean fbByCode) throws SQLException{
@@ -1235,9 +1296,96 @@ public class DeptIncentive {
         p_oMaster.updateObject("dEffctive", p_oApp.getServerDate());
         p_oMaster.updateObject("cTranStat", TransactionStatus.STATE_OPEN);
         p_oMaster.updateObject("xBranchNm", p_oApp.getBranchName());
-        System.out.println(p_oApp.getServerDate());
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
+    }
+    
+    private void createMasterRelease() throws SQLException{
+        RowSetMetaData meta = new RowSetMetaDataImpl();
+
+        meta.setColumnCount(14);
+
+        meta.setColumnName(1, "sTransNox");
+        meta.setColumnLabel(1, "sTransNox");
+        meta.setColumnType(1, Types.VARCHAR);
+        meta.setColumnDisplaySize(1, 12);
+
+        meta.setColumnName(2, "dTransact");
+        meta.setColumnLabel(2, "dTransact");
+        meta.setColumnType(2, Types.DATE);
+
+        meta.setColumnName(3, "sDeptIDxx");
+        meta.setColumnLabel(3, "sDeptIDxx");
+        meta.setColumnType(3, Types.VARCHAR);
+        meta.setColumnDisplaySize(3, 4);
+
+        meta.setColumnName(4, "sInctveCD");
+        meta.setColumnLabel(4, "sInctveCD");
+        meta.setColumnType(4, Types.VARCHAR);
+        meta.setColumnDisplaySize(4, 4);
+        
+        meta.setColumnName(5, "dEffctive");
+        meta.setColumnLabel(5, "dEffctive");
+        meta.setColumnType(5, Types.DATE);
+        
+        meta.setColumnName(6, "sRemarksx");
+        meta.setColumnLabel(6, "sRemarksx");
+        meta.setColumnDisplaySize(5, 128);
+        
+        meta.setColumnName(7, "cTranStat");
+        meta.setColumnLabel(7, "cTranStat");
+        meta.setColumnType(7, Types.CHAR);
+        meta.setColumnDisplaySize(8, 1);
+        
+        meta.setColumnName(8, "sApproved");
+        meta.setColumnLabel(8, "sApproved");
+        meta.setColumnType(8, Types.VARCHAR);
+        meta.setColumnDisplaySize(8, 10);
+        
+        meta.setColumnName(9, "dApproved");
+        meta.setColumnLabel(9, "dApproved");
+        meta.setColumnType(9, Types.DATE);
+        
+        meta.setColumnName(10, "sModified");
+        meta.setColumnLabel(10, "sModified");
+        meta.setColumnType(10, Types.VARCHAR);
+        meta.setColumnDisplaySize(10, 10);
+        
+        meta.setColumnName(11, "dModified");
+        meta.setColumnLabel(11, "dModified");
+        meta.setColumnType(11, Types.VARCHAR);
+        meta.setColumnDisplaySize(12, 10);
+        
+        meta.setColumnName(12, "xBranchNm");
+        meta.setColumnLabel(12, "xBranchNm");
+        meta.setColumnType(12, Types.VARCHAR);
+        
+        meta.setColumnName(13, "xDeptName");
+        meta.setColumnLabel(13, "xDeptName");
+        meta.setColumnType(13, Types.VARCHAR);
+        
+        meta.setColumnName(14, "xInctvNme");
+        meta.setColumnLabel(14, "xInctvNme");
+        meta.setColumnType(14, Types.VARCHAR);
+        
+        p_oRelease = new CachedRowSetImpl();
+        p_oRelease.setMetaData(meta);
+        
+        p_oRelease.last();
+        p_oRelease.moveToInsertRow();
+        
+        MiscUtil.initRowSet(p_oRelease);       
+        
+        p_oRelease.updateObject("sTransNox", MiscUtil.getNextCode(RELEASE_TABLE, "sTransNox", true, p_oApp.getConnection(), p_sBranchCd));
+        p_oRelease.updateObject("dTransact", p_oApp.getServerDate());
+        p_oRelease.updateObject("sApproved", p_oApp.getUserID());
+        p_oRelease.updateObject("dApproved", p_oApp.getServerDate());
+        p_oRelease.updateObject("sPostedxx", p_oApp.getUserID());
+        p_oRelease.updateObject("dPostedxx", p_oApp.getServerDate());
+        p_oRelease.updateObject("cTranStat", TransactionStatus.STATE_OPEN);
+        p_oRelease.updateObject("xBranchNm", p_oApp.getBranchName());
+        p_oRelease.insertRow();
+        p_oRelease.moveToCurrentRow();
     }
     
     private double DecryptAmount(String fsValue){
