@@ -1148,40 +1148,23 @@ public class DeptIncentive {
         
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
-        
-        String lsSQL = "SELECT " +
-                "            a.sEmployID " +
-                "          , IFNULL(b.sCompnyNm, '') xEmployNm " +
-                "          , IFNULL(d.sPositnNm, '') xPositnNm " +
-                "          , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
-                "          , IFNULL(e.sBankAcct, '') xBankAcct " +
-                "          , IFNULL(f.sBankName, '') xBankName " +
-                "       FROM Employee_Master001 a " +
-                "           LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
-                "           LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
-                "           LEFT JOIN Employee_Incentive_Bank_Info e ON a.sEmployID = e.sEmployID " +
-                "           LEFT JOIN Banks f ON e.sBankIDxx = f.sBankIDxx " +
-                "       WHERE a.sBranchCd =  " + SQLUtil.toSQL(p_sBranchCd) +
-                "       AND ISNULL(a.dFiredxxx) " + 
-                "     GROUP BY a.sEmployID  " +
-                "       ORDER BY xEmployNm";   
-//      
-//        String lsSQL2 =   " UNION SELECT" +
-//        "      h.sEmployID " +
-//        "    , IFNULL(i.sCompnyNm, '') xEmployNm " +
-//        "    , IFNULL(k.sPositnNm, '') xPositnNm " +
-//        "    , IFNULL(h.sDeptIDxx, '') sDeptIDxx " +
-//        "     FROM  Branch e" +
-//        "	 ,Branch_Others f " +
-//        "	 , Branch_Area g " +
-//        "     LEFT JOIN Employee_Master001 h " +
-//        "	ON g.sAreaMngr = h.sEmployID   " +
-//        "     LEFT JOIN Client_Master i ON h.sEmployID = i.sClientID " +
-//        "     LEFT JOIN `Position` k ON h.sPositnID = k.sPositnID" +
-//        "	WHERE e.sBranchCd = f.sBranchCd" +
-//        "	AND  f.sAreaCode = g.sAreaCode" +
-//        "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
-//        " ORDER BY xEmployNm";   
+        String lsSQL = getSQ_Detail();
+//        String lsSQL = "SELECT " +
+//                "            a.sEmployID " +
+//                "          , IFNULL(b.sCompnyNm, '') xEmployNm " +
+//                "          , IFNULL(d.sPositnNm, '') xPositnNm " +
+//                "          , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
+//                "          , IFNULL(e.sBankAcct, '') xBankAcct " +
+//                "          , IFNULL(f.sBankName, '') xBankName " +
+//                "       FROM Employee_Master001 a " +
+//                "           LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
+//                "           LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
+//                "           LEFT JOIN Employee_Incentive_Bank_Info e ON a.sEmployID = e.sEmployID " +
+//                "           LEFT JOIN Banks f ON e.sBankIDxx = f.sBankIDxx " +
+//                "       WHERE a.sBranchCd =  " + SQLUtil.toSQL(p_sBranchCd) +
+//                "       AND ISNULL(a.dFiredxxx) " + 
+//                "     GROUP BY a.sEmployID  " +
+//                "       ORDER BY xEmployNm";    
         p_oMaster.first();
         if (!p_oMaster.getString("sDeptIDxx").isEmpty())
             lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
@@ -1432,8 +1415,8 @@ public class DeptIncentive {
         
         p_oDetail.beforeFirst();
         while (p_oDetail.next()){            
-//            if (DecryptAmount(p_oDetail.getString("sNewAmtxx")) < 0.00){
-//                p_sMessage = p_oDetail.getString("sNewAmtxx") + " has negative new incentive amount.";
+//            if (p_oDetail.getString("xBankName").isEmpty() || p_oDetail.getString("xBankAcct").isEmpty()){
+//                p_sMessage =  "Bank Account not available.";
 //                return false;
 //            }  
             if ((p_oDetail.getDouble("sNewAmtxx")) < 0.00){

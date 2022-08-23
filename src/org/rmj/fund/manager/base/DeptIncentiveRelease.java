@@ -40,6 +40,7 @@ public class DeptIncentiveRelease {
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
+    private boolean p_oNew;
     
     private final DeptIncentive p_oIncentive;
     private ArrayList<CachedRowSet> p_oDetail;
@@ -155,13 +156,12 @@ public class DeptIncentiveRelease {
         p_oDeptDetail = new CachedRowSetImpl();
         p_oDeptDetail.setMetaData(meta);        
         
-//     
     }
     
     private void createMaster() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();
 
-        meta.setColumnCount(14);
+        meta.setColumnCount(15);
 
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -226,41 +226,15 @@ public class DeptIncentiveRelease {
         meta.setColumnLabel(14, "xInctvNme");
         meta.setColumnType(14, Types.VARCHAR);
         
+        meta.setColumnName(15, "sBatchNox");
+        meta.setColumnLabel(15, "sBatchNox");
+        meta.setColumnType(15, Types.VARCHAR);
+        meta.setColumnDisplaySize(15, 12);
+        
         p_oDeptMaster = new CachedRowSetImpl();
         p_oDeptMaster.setMetaData(meta);
         
-        p_oDeptMaster.last();
-        p_oDeptMaster.moveToInsertRow();
         
-        MiscUtil.initRowSet(p_oDeptMaster);       
-        p_oTag = new ArrayList<>();
-       ResultSet loRS = p_oApp.executeQuery(getSQ_DeptMaster());
-       int lnRow = 1;
-       while (loRS.next()){
-            p_oDeptMaster.last();
-            p_oDeptMaster.moveToInsertRow();
-
-            MiscUtil.initRowSet(p_oDeptMaster);        
-            p_oDeptMaster.updateString("sTransNox", loRS.getString("sTransNox"));
-            p_oDeptMaster.updateString("dTransact", loRS.getString("dTransact"));
-            p_oDeptMaster.updateString("sDeptIDxx", loRS.getString("sDeptIDxx"));
-            p_oDeptMaster.updateString("sInctveCD", loRS.getString("sInctveCD"));
-            p_oDeptMaster.updateString("sRemarksx", loRS.getString("sRemarksx"));
-            p_oDeptMaster.updateString("dEffctive", loRS.getString("dEffctive"));
-            p_oDeptMaster.updateString("cTranStat", loRS.getString("cTranStat"));
-            p_oDeptMaster.updateString("sApproved", loRS.getString("sApproved"));
-            p_oDeptMaster.updateString("dApproved", loRS.getString("dApproved"));
-            p_oDeptMaster.updateString("sModified", loRS.getString("sModified"));
-            p_oDeptMaster.updateString("dModified", loRS.getString("dModified"));
-            p_oDeptMaster.updateString("xBranchNm", loRS.getString("xBranchNm"));
-            p_oDeptMaster.updateString("xDeptName", loRS.getString("xDeptName"));
-            p_oDeptMaster.updateString("xInctvNme", loRS.getString("xInctvNme"));
-            
-            p_oTag.add("0");
-            p_oDeptMaster.insertRow();
-            p_oDeptMaster.moveToCurrentRow();
-            lnRow++;
-        }
     }
     private void initMaster() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();
@@ -322,59 +296,9 @@ public class DeptIncentiveRelease {
         p_oMaster.updateObject("sTransNox", MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, p_oApp.getConnection(), p_sBranchCd));
         p_oMaster.updateObject("dTransact", p_oApp.getServerDate());
         p_oMaster.updateString("cTranStat", TransactionStatus.STATE_OPEN);
-        
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
     }
-    public boolean OpenTransaction(String fsTransNox) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
-        
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";
-        
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
-        }  
-        
-        String lsSQL;
-        ResultSet loRS;
-        RowSetFactory factory = RowSetProvider.newFactory();
-        
-        //open master
-        lsSQL = MiscUtil.addCondition(getSQ_DeptMaster(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-        loRS = p_oApp.executeQuery(lsSQL);
-        p_oDeptMaster = factory.createCachedRowSet();
-        p_oDeptMaster.populate(loRS);
-        MiscUtil.close(loRS);
-        
-        //open detail
-        lsSQL = MiscUtil.addCondition(getSQ_DeptDetail(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-        loRS = p_oApp.executeQuery(lsSQL);
-        p_oDeptDetail = factory.createCachedRowSet();
-        p_oDeptDetail.populate(loRS);
-        MiscUtil.close(loRS);
-        
-       
-        
-//        computeEmpTotalIncentiveAmount();
-        p_nEditMode = EditMode.READY;
-        
-        return true;
-    }
-    
-    
     private String getSQ_Master(){
         return "SELECT" +
                     "  sTransNox" +
@@ -418,6 +342,7 @@ public class DeptIncentiveRelease {
                     ", IFNULL(c.sBranchNm,'') xBranchNm" +
                     ", IFNULL(b.sDeptName, '') xDeptName" +
                     ", IFNULL(d.sInctveDs, '') xInctvNme" +
+                    ", IFNULL(a.sBatchNox, '') sBatchNox" +
                 " FROM Department_Incentive_Master a" +
                         " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                         " LEFT JOIN Incentive d ON a.sInctveCD = d.sInctveCD" +
@@ -453,14 +378,14 @@ public class DeptIncentiveRelease {
     }
     
     public int getDetailItemCount() throws SQLException{
-//        p_oDeptDetail.last();
-//        return p_oDeptDetail.getRow();
-        return p_oDetail.size();
+        p_oDeptDetail.last();
+        return p_oDeptDetail.getRow();
+//        return p_oDetail.size();
     }
     
     public Object getDeptDetail(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
-        if (getItemCount() == 0 || fnRow > getItemCount()) return null;
+        if (getDetailItemCount() == 0 || fnRow > getDetailItemCount()) return null;
         
         p_oDeptDetail.absolute(fnRow);
        
@@ -478,31 +403,6 @@ public class DeptIncentiveRelease {
     public Object getDeptDetail(int fnRow, String fsIndex) throws SQLException{
         return getDeptDetail(fnRow, getColumnIndex(p_oDeptDetail, fsIndex));
     }
-//     public void setDeptDetail(int fnRow, int fnIndex, Object foValue) throws SQLException{
-//        if (getDetailItemCount()== 0 || fnRow > getDetailItemCount()) return;
-//        
-//        p_oDeptDetail.absolute(fnRow);
-//        switch (fnIndex){
-//            case 6://sNewAmtxx
-//                if (StringUtil.isNumeric(String.valueOf(foValue))) 
-//                    p_oDeptDetail.updateObject(fnIndex, (double) foValue);
-//                else
-//                    p_oDeptDetail.updateObject(fnIndex, (0.00));
-//
-////                
-////                if (p_oListener != null) p_oListener.DetailRetreive(fnRow,fnIndex,p_oDetail.getString(fnIndex));
-//                break;
-//            case 7://sRemarksx
-//            
-//                p_oDeptDetail.updateString(fnIndex, (String) foValue);
-//
-////                if (p_oListener != null) p_oListener.DetailRetreive(fnRow,fnIndex, p_oDetail.getString(fnIndex));
-//                break;
-//        }
-//        
-//        p_oDeptDetail.updateRow();
-//        if (p_oListener != null) p_oListener.DetailRetreive(0,0,"");
-//    }
     public int getItemCount() throws SQLException{
         p_oDeptMaster.last();
         return p_oDeptMaster.getRow();
@@ -529,7 +429,6 @@ public class DeptIncentiveRelease {
     
     public boolean getTag(int fnRow) throws SQLException{
         if (getItemCount() == 0 || getItemCount() < fnRow) return false;
-        
         return p_oTag.get(fnRow).equals("1");
     }
     
@@ -541,7 +440,7 @@ public class DeptIncentiveRelease {
     }
     
     public Object getMaster(String fsIndex) throws SQLException{
-        return getMaster(getColumnIndex(p_oMaster, fsIndex));
+        return getMaster(getColumnIndex(p_oMaster,fsIndex));
     }
     
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
@@ -561,6 +460,19 @@ public class DeptIncentiveRelease {
        
         return lnIndex;
     }
+//     private int getColumnIndex(String fsValue) throws SQLException{
+//        int lnIndex = 0;
+//        int lnRow = p_oMaster.getMetaData().getColumnCount();
+//        
+//        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+//            if (fsValue.equals(p_oMaster.getMetaData().getColumnLabel(lnCtr))){
+//                lnIndex = lnCtr;
+//                break;
+//            }
+//        }
+//        
+//        return lnIndex;
+//    }
     public boolean NewTransaction() throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -575,15 +487,54 @@ public class DeptIncentiveRelease {
         }
         
         p_sMessage = "";
-        
+        p_oNew = true;
         initMaster();
-        createMaster();
+        createMaster(); 
+        createDetail();
+        p_oDeptMaster.last();
+        p_oDeptMaster.moveToInsertRow();
         
+       
+        MiscUtil.initRowSet(p_oDeptMaster);     
+        String lsSQL= getSQ_DeptMaster();
+       
+        
+        p_oTag = new ArrayList<>();
+        
+       lsSQL = MiscUtil.addCondition(lsSQL, " TRIM(a.sBatchNox) IS NULL");
+       ResultSet loRS = p_oApp.executeQuery(lsSQL);
+       int lnRow = 1;
+       while (loRS.next()){
+            p_oDeptMaster.last();
+            p_oDeptMaster.moveToInsertRow();
+
+            MiscUtil.initRowSet(p_oDeptMaster);        
+            p_oDeptMaster.updateString("sTransNox", loRS.getString("sTransNox"));
+            p_oDeptMaster.updateString("dTransact", loRS.getString("dTransact"));
+            p_oDeptMaster.updateString("sDeptIDxx", loRS.getString("sDeptIDxx"));
+            p_oDeptMaster.updateString("sInctveCD", loRS.getString("sInctveCD"));
+            p_oDeptMaster.updateString("sRemarksx", loRS.getString("sRemarksx"));
+            p_oDeptMaster.updateString("dEffctive", loRS.getString("dEffctive"));
+            p_oDeptMaster.updateString("cTranStat", loRS.getString("cTranStat"));
+            p_oDeptMaster.updateString("sApproved", loRS.getString("sApproved"));
+            p_oDeptMaster.updateString("dApproved", loRS.getString("dApproved"));
+            p_oDeptMaster.updateString("sModified", loRS.getString("sModified"));
+            p_oDeptMaster.updateString("dModified", loRS.getString("dModified"));
+            p_oDeptMaster.updateString("xBranchNm", loRS.getString("xBranchNm"));
+            p_oDeptMaster.updateString("xDeptName", loRS.getString("xDeptName"));
+            p_oDeptMaster.updateString("xInctvNme", loRS.getString("xInctvNme"));
+            p_oDeptMaster.updateString("sBatchNox", loRS.getString("sBatchNox"));
+            p_oTag.add("0");
+            p_oDeptMaster.insertRow();
+            p_oDeptMaster.moveToCurrentRow();
+           
+            lnRow++;
+        }
         
         p_nEditMode = EditMode.ADDNEW;
         return true;
     }
-    public boolean SearchDeptTransaction(String fsValue, boolean fbByCode) throws SQLException{
+    public boolean SearchTransaction(String fsValue, boolean fbByCode) throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
@@ -603,39 +554,36 @@ public class DeptIncentiveRelease {
             }
         }        
         
-        String lsSQL = getSQ_DeptMaster();
+        String lsSQL = getSQ_Master();
         String lsCondition = "";
         
-//        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
-//            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment()))
-//                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
-//        } else
-//            lsCondition = "a.sDeptIDxx LIKE " + SQLUtil.toSQL(p_oApp.getDepartment() + "%");
-//        
-//        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
-//        
+        lsCondition = "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%");
+        
+        if (!lsSQL.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+        p_oNew = false;
+        
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
-                                    p_oApp, 
-                                    lsSQL, 
-                                    fsValue, 
-                                    "Trans. No.»Department»Date Effective»Remarks", 
-                                    "sTransNox»xDeptName»dEffctive»sRemarksx", 
-                                    "a.sTransNox»b.sDeptName»a.dEffctive»a.sRemarksx", 
-                                    fbByCode ? 0 : 1);
-            System.out.println(fsValue);
-                if (loJSON != null) 
-                    return OpenDeptTransaction((String) loJSON.get("sTransNox"));
-                else {
-                    p_sMessage = "No record selected.";
-                    return false;
-                }
+                                p_oApp, 
+                                lsSQL, 
+                                fsValue, 
+                                "Trans. No.»Date»Amount", 
+                                "sTransNox»dTransact»nTranTotl", 
+                                "sTransNox»dTransact»nTranTotl", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null) 
+                return OpenTransaction((String) loJSON.get("sTransNox"));
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
         }
         
         if (fbByCode)
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox = " + SQLUtil.toSQL(fsValue));   
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));   
         else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%")); 
             lsSQL += " LIMIT 1";
         }
         
@@ -650,10 +598,10 @@ public class DeptIncentiveRelease {
         lsSQL = loRS.getString("sTransNox");
         MiscUtil.close(loRS);
         
-        return OpenDeptTransaction(lsSQL);
+        return OpenTransaction(lsSQL);
     }
     
-    public boolean OpenDeptTransaction(String fsTransNox) throws SQLException{
+    public boolean OpenTransaction(String fsTransNox) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
@@ -675,52 +623,280 @@ public class DeptIncentiveRelease {
             }
         }  
         
-        String lsSQL;
-//        ResultSet loRS;
-        RowSetFactory factory = RowSetProvider.newFactory();
+        createMaster(); 
         createDetail();
-      
-//        
-//        //open detail
-//        lsSQL = MiscUtil.addCondition(getSQ_DeptDetail(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-//        loRS = p_oApp.executeQuery(lsSQL);
-//        p_oDeptDetail = factory.createCachedRowSet();
-//        p_oDeptDetail.populate(loRS);
-//        MiscUtil.close(loRS);
-        lsSQL = MiscUtil.addCondition(getSQ_DeptDetail(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
         
-        p_oDetail = new ArrayList();
-        int lnRow = 1;
-        while (loRS.next()){
-            p_oDeptDetail.last();
-            p_oDeptDetail.moveToInsertRow();
+        //open master
+        lsSQL = MiscUtil.addCondition(getSQ_Master(), "sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oMaster = factory.createCachedRowSet();
+        p_oMaster.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        if (p_oMaster.size() == 0){
+            p_sMessage = "No transaction to open.";
+            return false;
+        }
+     
+        //open dept master
+       
+        lsSQL = MiscUtil.addCondition(getSQ_DeptMaster(), "a.sBatchNox = " + SQLUtil.toSQL(fsTransNox));
+        
+        p_oTag = new ArrayList<>();
+        
+        
+       loRS = p_oApp.executeQuery(lsSQL);
+       
+       p_oTag = new ArrayList<>();
+       int lnRow = 1;
+       while (loRS.next()){
+            p_oDeptMaster.last();
+            p_oDeptMaster.moveToInsertRow();
 
-            MiscUtil.initRowSet(p_oDeptDetail);        
-            p_oDeptDetail.updateString("nEntryNox", loRS.getString("nEntryNox"));
-            p_oDeptDetail.updateString("sEmployID", loRS.getString("sEmployID"));
-            p_oDeptDetail.updateString("xEmployNm", loRS.getString("xEmployNm"));
-//            p_oDetail.updateString("xEmpLevNm", loRS.getString("xEmpLevNm"));
-            p_oDeptDetail.updateString("xPositnNm", loRS.getString("xPositnNm"));
-            p_oDeptDetail.updateString("xBankAcct", loRS.getString("xBankAcct"));
-            p_oDeptDetail.updateString("xBankName", loRS.getString("xBankName"));
-            p_oDeptDetail.updateString("dLastUpdt", loRS.getString("xBankName"));
-            p_oDeptDetail.updateString("sOldAmtxx", loRS.getString("sOldAmtxx"));
-            p_oDeptDetail.updateString("sNewAmtxx", loRS.getString("sNewAmtxx"));
-            
-            
-            p_oDeptDetail.insertRow();
-            p_oDeptDetail.moveToCurrentRow();
-            
-            p_oDetail.add(p_oDeptDetail);
-            System.out.println(lnRow + " " + loRS.getString("xEmployNm") + " "+ loRS.getString("sOldAmtxx")+ " "+ loRS.getString("sNewAmtxx"));
+            MiscUtil.initRowSet(p_oDeptMaster);        
+            p_oDeptMaster.updateString("sTransNox", loRS.getString("sTransNox"));
+            p_oDeptMaster.updateString("dTransact", loRS.getString("dTransact"));
+            p_oDeptMaster.updateString("sDeptIDxx", loRS.getString("sDeptIDxx"));
+            p_oDeptMaster.updateString("sInctveCD", loRS.getString("sInctveCD"));
+            p_oDeptMaster.updateString("sRemarksx", loRS.getString("sRemarksx"));
+            p_oDeptMaster.updateString("dEffctive", loRS.getString("dEffctive"));
+            p_oDeptMaster.updateString("cTranStat", loRS.getString("cTranStat"));
+            p_oDeptMaster.updateString("sApproved", loRS.getString("sApproved"));
+            p_oDeptMaster.updateString("dApproved", loRS.getString("dApproved"));
+            p_oDeptMaster.updateString("sModified", loRS.getString("sModified"));
+            p_oDeptMaster.updateString("dModified", loRS.getString("dModified"));
+            p_oDeptMaster.updateString("xBranchNm", loRS.getString("xBranchNm"));
+            p_oDeptMaster.updateString("xDeptName", loRS.getString("xDeptName"));
+            p_oDeptMaster.updateString("xInctvNme", loRS.getString("xInctvNme"));
+            p_oDeptMaster.updateString("sBatchNox", loRS.getString("sBatchNox"));
+            p_oTag.add("1");
+            p_oDeptMaster.insertRow();
+            p_oDeptMaster.moveToCurrentRow();
+           if (OpenDeptTransaction(loRS.getString("sTransNox"))){
+               
+            }
             lnRow++;
         }
-         MiscUtil.close(loRS);
-//        computeEmpTotalIncentiveAmount();
+       
+        
+        MiscUtil.close(loRS);
         p_nEditMode = EditMode.READY;
         
         return true;
+    }
+    
+    public boolean OpenDeptTransaction(String fsTransNox) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (System.getProperty(DEBUG_MODE).equals("0")){
+            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
+                p_sMessage = "Your employee level is not authorized to use this transaction.";
+                return false;
+            }
+
+            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
+                p_sMessage = "Your account level is not authorized to use this transaction.";
+                return false;
+            }
+        }  
+        
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        //open detail
+        lsSQL = MiscUtil.addCondition(getSQ_DeptDetail(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oDeptDetail = factory.createCachedRowSet();
+        p_oDeptDetail.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
+   
+    public boolean SaveTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_nEditMode != EditMode.ADDNEW){
+            p_sMessage = "Invalid edit mode detected.";
+            return false;
+        }
+        
+        if (!isEntryOK()){
+            p_sMessage = "No record was tagged for release.";
+            return false;
+        }
+        
+        String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, p_oApp.getConnection(), p_sBranchCd);
+        
+        if (!p_bWithParent) p_oApp.beginTrans();
+        
+        String lsSQL;
+        int lnCtr, lnCtr2, lnCtr3 = 0;
+        double lnTranTotl = 0.00;
+        
+        for (lnCtr = 0; lnCtr <= p_oTag.size()-1; lnCtr++){
+            if (p_oTag.get(lnCtr).equals("1")){
+                lsSQL = "UPDATE Department_Incentive_Master SET" +
+                            "  sBatchNox = " + SQLUtil.toSQL(lsTransNox) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL((String) getDeptMaster(lnCtr + 1,"sTransNox"));
+        
+                if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Master", p_sBranchCd, ((String)getDeptMaster(lnCtr + 1,"sTransNox")).substring(0, 4)) <= 0){
+                    if (!p_bWithParent) p_oApp.rollbackTrans();
+                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    return false;
+                }
+                
+                for (lnCtr2 = 1; lnCtr2 <= getDetailItemCount(); lnCtr2++){
+                    lnTranTotl += Double.parseDouble(getDeptDetail(lnCtr2, "sNewAmtxx").toString());
+                }
+                
+                lnCtr3 += 1;
+            }
+        }
+        
+        p_oMaster.first();
+        p_oMaster.updateObject("sTransNox", lsTransNox);
+        p_oMaster.updateObject("nTranTotl", lnTranTotl);
+        p_oMaster.updateObject("nEntryNox", lnCtr3);
+        p_oMaster.updateObject("sModified", p_oApp.getUserID());
+        p_oMaster.updateObject("dModified", p_oApp.getServerDate());        
+        
+        lsSQL = MiscUtil.rowset2SQL(p_oMaster, MASTER_TABLE, "");
+        
+        if (p_oApp.executeQuery(lsSQL, "MASTER_TABLE", p_sBranchCd, "") <= 0){
+            if (!p_bWithParent) p_oApp.rollbackTrans();
+            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+            return false;
+        }
+        
+        if (!p_bWithParent) p_oApp.commitTrans();
+        
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    public boolean ConfirmTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        if (p_nEditMode != EditMode.READY){
+            p_sMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_bWithParent) {
+            p_sMessage = "Approving transactions from other object is not allowed.";
+            return false;
+        }
+        
+        if (((String) getMaster("cTranStat")).equals("1")){
+            p_sMessage = "Transaction was already confirmed.";
+            return false;
+        }
+        
+//        if (((String) getMaster("cTranStat")).equals("2")){
+//            p_sMessage = "Unable to confirm already posted transactions.";
+//            return false;
+//        }
+        
+        if (((String) getMaster("cTranStat")).equals("3")){
+            p_sMessage = "Unable to confirm already cancelled transactions.";
+            return false;
+        }
+        
+        String lsSQL;
+        lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                    "  cTranStat = '1'" +
+                    ", sModified = " + SQLUtil.toSQL(p_oApp.getUserID()) +
+                    ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+                " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+        
+        if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, ((String) getMaster("sTransNox")).substring(0, 4)) <= 0){
+            p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
+            return false;
+        }
+        
+        if (p_oListener != null) p_oListener.MasterRetreive(8, "1");
+        
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    public boolean CancelTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        if (p_nEditMode != EditMode.READY){
+            p_sMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_bWithParent) {
+            p_sMessage = "Approving transactions from other object is not allowed.";
+            return false;
+        }
+        
+        if (((String) getMaster("cTranStat")).equals("3")){
+            p_sMessage = "Transaction was already cancelled.";
+            return false;
+        }
+        
+        if (((String) getMaster("cTranStat")).equals("1")){
+            p_sMessage = "Unable to cancel already closed transaction.";
+            return false;
+        }
+        
+        String lsSQL;
+        lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                    "  cTranStat = '3'" +
+                    ", sModified = " + SQLUtil.toSQL(p_oApp.getUserID()) +
+                    ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+                " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+        
+        if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, ((String) getMaster("sTransNox")).substring(0, 4)) <= 0){
+            p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
+            return false;
+        }
+        
+        if (p_oListener != null) p_oListener.MasterRetreive(8, "3");
+        
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    private boolean isEntryOK(){
+        boolean lbTag = false;
+        
+        for (int lnCtr = 0; lnCtr <= p_oTag.size()-1; lnCtr++){
+            if (p_oTag.get(lnCtr).equals("1")){
+                lbTag = true;
+                break;
+            }
+        }
+        
+        return lbTag;
     }
     
 }
