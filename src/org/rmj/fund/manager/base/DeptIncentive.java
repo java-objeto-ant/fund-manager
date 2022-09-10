@@ -1148,52 +1148,53 @@ public class DeptIncentive {
         
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
-        String lsSQL = getSQ_Detail();
-//        String lsSQL = "SELECT " +
-//                "            a.sEmployID " +
-//                "          , IFNULL(b.sCompnyNm, '') xEmployNm " +
-//                "          , IFNULL(d.sPositnNm, '') xPositnNm " +
-//                "          , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
-//                "          , IFNULL(e.sBankAcct, '') xBankAcct " +
-//                "          , IFNULL(f.sBankName, '') xBankName " +
-//                "       FROM Employee_Master001 a " +
-//                "           LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
-//                "           LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
-//                "           LEFT JOIN Employee_Incentive_Bank_Info e ON a.sEmployID = e.sEmployID " +
-//                "           LEFT JOIN Banks f ON e.sBankIDxx = f.sBankIDxx " +
-//                "       WHERE a.sBranchCd =  " + SQLUtil.toSQL(p_sBranchCd) +
-//                "       AND ISNULL(a.dFiredxxx) " + 
-//                "     GROUP BY a.sEmployID  " +
-//                "       ORDER BY xEmployNm";    
+//        String lsSQL = getSQ_Detail();
+        String lsSQL = "SELECT " +
+        "            a.sEmployID " +
+        "          , IFNULL(b.sCompnyNm, '') xEmployNm " +
+        "          , IFNULL(d.sPositnNm, '') xPositnNm " +
+        "          , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
+        "          , IFNULL(e.sBankAcct, '') xBankAcct " +
+        "          , IFNULL(f.sBankName, '') xBankName " +
+        "       FROM Employee_Master001 a " +
+        "           LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
+        "           LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
+        "           LEFT JOIN Employee_Incentive_Bank_Info e ON a.sEmployID = e.sEmployID " +
+        "           LEFT JOIN Banks f ON e.sBankIDxx = f.sBankIDxx " +
+        "       WHERE ISNULL(a.dFiredxxx) " + 
+        "     GROUP BY a.sEmployID  " +
+        "       ORDER BY xEmployNm";    
+      
         p_oMaster.first();
-        if (!p_oMaster.getString("sDeptIDxx").isEmpty())
+        if (!p_oMaster.getString("sDeptIDxx").isEmpty()){
             lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
 //            lsSQL = lsSQL + lsSQL2;
 //            lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
-//            
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-        
-        int lnRow = 1;
-        while (loRS.next()){
-            p_oDetail.last();
-            p_oDetail.moveToInsertRow();
+            
+            System.out.println(lsSQL);
+            ResultSet loRS = p_oApp.executeQuery(lsSQL);
 
-            MiscUtil.initRowSet(p_oDetail);        
-            p_oDetail.updateInt("nEntryNox", lnRow);
-            p_oDetail.updateString("sEmployID", loRS.getString("sEmployID"));
-            p_oDetail.updateString("xEmployNm", loRS.getString("xEmployNm"));
-//            p_oDetail.updateString("xEmpLevNm", loRS.getString("xEmpLevNm"));
-            p_oDetail.updateString("xPositnNm", loRS.getString("xPositnNm"));
-            p_oDetail.updateString("xBankAcct", loRS.getString("xBankAcct"));
-            p_oDetail.updateString("xBankName", loRS.getString("xBankName"));
-            p_oDetail.updateObject("dLastUpdt", p_oApp.getServerDate());
-            p_oDetail.updateObject("sOldAmtxx", 0.00);
-            p_oDetail.updateObject("sNewAmtxx", 0.00);
-            
-            
-            p_oDetail.insertRow();
-            p_oDetail.moveToCurrentRow();
-            lnRow++;
+            int lnRow = 1;
+            while (loRS.next()){
+                p_oDetail.last();
+                p_oDetail.moveToInsertRow();
+
+                MiscUtil.initRowSet(p_oDetail);        
+                p_oDetail.updateInt("nEntryNox", lnRow);
+                p_oDetail.updateString("sEmployID", loRS.getString("sEmployID"));
+                p_oDetail.updateString("xEmployNm", loRS.getString("xEmployNm"));
+                p_oDetail.updateString("xPositnNm", loRS.getString("xPositnNm"));
+                p_oDetail.updateString("xBankAcct", loRS.getString("xBankAcct"));
+                p_oDetail.updateString("xBankName", loRS.getString("xBankName"));
+                p_oDetail.updateObject("dLastUpdt", p_oApp.getServerDate());
+                p_oDetail.updateObject("sOldAmtxx", 0.00);
+                p_oDetail.updateObject("sNewAmtxx", 0.00);
+
+
+                p_oDetail.insertRow();
+                p_oDetail.moveToCurrentRow();
+                lnRow++;
+            }
         }
        
     }
