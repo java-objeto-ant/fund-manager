@@ -30,6 +30,7 @@ public class Incentive {
     private final String FINANCE = "028";
     private final String AUDITOR = "034";
     private final String COLLECTION = "022";
+    private final String MIS = "026";
     private final String MAIN_OFFICE = "M001»M0W1";
     
     private final String DEBUG_MODE = "app.debug.mode";
@@ -390,11 +391,12 @@ public class Incentive {
         String lsCondition = "";
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
-            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment()))
-                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
-        } else
-            lsCondition = "a.sTransNox LIKE " + SQLUtil.toSQL(p_oApp.getBranchCode() + "%");
-        
+            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+                if (!p_oApp.getDepartment().equals(MIS)) lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+            }
+        } else{
+            if (!p_oApp.isMainOffice()) lsCondition = "a.sTransNox LIKE " + SQLUtil.toSQL(p_oApp.getBranchCode() + "%");
+        }
         if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
         
         if (p_bWithUI){
@@ -508,6 +510,98 @@ public class Incentive {
         p_nEditMode = EditMode.READY;
         
         return true;
+    }
+    public boolean SearchEmployee(String fsValue, boolean fbByCode) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (System.getProperty(DEBUG_MODE).equals("0")){
+            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
+                p_sMessage = "Your employee level is not authorized to use this transaction.";
+                return false;
+            }
+
+            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
+                p_sMessage = "Your account level is not authorized to use this transaction.";
+                return false;
+            }
+        }        
+        
+        String lsSQL = getSQ_Employee();
+        String lsCondition = "";
+        
+//        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
+//            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment()))
+//                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+//        } else
+//            lsCondition = "b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%");
+        lsCondition = "b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%");
+        
+        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+        
+        if (p_bWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                p_oApp, 
+                                lsSQL, 
+                                fsValue, 
+                                "Employee No.»Name»Level»Position", 
+                                "sEmployID»xEmployNm»xEmpLevNm»xPositnNm", 
+                                "a.sEmployID»b.sCompnyNm»c.sEmpLevNm»d.sPositnNm", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null){
+                int lnRow = 1;
+                for(int lnCtr = 1; lnCtr<=getItemCount(); lnCtr++){
+                    lnRow++;
+                }
+                
+                p_oDetail.last();
+                p_oDetail.moveToInsertRow();
+                MiscUtil.initRowSet(p_oDetail);        
+                p_oDetail.updateInt("nEntryNox", lnRow);
+                p_oDetail.updateString("sEmployID", (String) loJSON.get("sEmployID"));
+                p_oDetail.updateString("xEmployNm", (String) loJSON.get("xEmployNm"));
+                p_oDetail.updateString("xEmpLevNm", (String) loJSON.get("xEmpLevNm"));
+                p_oDetail.updateString("xPositnNm", (String) loJSON.get("xPositnNm"));
+                p_oDetail.updateString("xSrvcYear", (String) loJSON.get("xSrvcYear"));
+                p_oDetail.updateString("nTotalAmt", EncryptAmount(0.00));
+                p_oDetail.updateDouble("xIncentve", 0.00);
+                p_oDetail.updateDouble("xDeductnx", 0.00);
+
+
+                p_oDetail.insertRow();
+                p_oDetail.moveToCurrentRow();
+                return true;
+            }
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "b.sCompnyNm = " + SQLUtil.toSQL(fsValue));   
+        else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+            lsSQL += " LIMIT 1";
+        }
+        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("xEmployNm");
+        MiscUtil.close(loRS);
+        
+        return OpenTransaction(lsSQL);
     }
     
     public boolean UpdateTransaction() throws SQLException{
@@ -2462,6 +2556,19 @@ public class Incentive {
                         " LEFT JOIN `Position` e ON b.sPositnID = e.sPositnID" +
                 " WHERE a.sEmployID = b.sEmployID" +
                 " ORDER BY nEntryNox";
+    }
+    private String getSQ_Employee(){
+        return "SELECT" +
+                    "  IFNULL(a.sEmployID, '') sEmployID" +
+                    ", IFNULL(b.sCompnyNm, '') xEmployNm" +
+                    ", IFNULL(c.sEmpLevNm, '') xEmpLevNm" +
+                    ", IFNULL(d.sPositnNm, '') xPositnNm" +
+                    ", IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(a.dStartEmp, a.dHiredxxx)) / 365), '') xSrvcYear" +
+                " FROM Employee_Master001 a" +
+                        " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID" +
+                        " LEFT JOIN Employee_Level c ON a.sEmpLevID = c.sEmpLevID" +
+                        " LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID" +
+                "  WHERE b.sClientID IS NOT NULL ";
     }
     
     private String getSQ_Detail_Allocation(){
