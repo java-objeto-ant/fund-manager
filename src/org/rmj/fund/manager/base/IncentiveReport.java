@@ -1601,7 +1601,9 @@ public class IncentiveReport {
                 "  f.sBranchNm    xBranchNm, " +
                 "  g.sMonthxxx, " +
                 "  g.sRemarksx, " +
-                "  g.cTranStat " +
+                "  g.cTranStat, " +
+                "  IFNULL(h.sBankAcct,'') xBankAcct, " +
+                "  IFNULL(i.sBankName,'') xBankName " +
                 "FROM Incentive_Detail a, " +
                 "  Employee_Master001 b " +
                 "  LEFT JOIN Client_Master c " +
@@ -1611,11 +1613,15 @@ public class IncentiveReport {
                 "  LEFT JOIN `Position` e " +
                 "    ON b.sPositnID = e.sPositnID, " +
                 "  Branch f, " +
-                "  Incentive_Master g " +
+                "  Incentive_Master g, " +
+                "  Employee_Incentive_Bank_Info h," +
+                "  Banks i " +
                 "WHERE a.sEmployID = b.sEmployID " +
                 "    AND " + lsSQL +
                 "    AND f.sBranchCd = LEFT(a.sTransNox, 4) " +
-                "    AND a.sTransNox = g.sTransNox ";
+                "    AND a.sTransNox = g.sTransNox " +
+                "    AND a.sEmployID = h.sEmployID "+
+                "    AND h.sBankIDxx = i.sBankIDxx ";
         return lsSQL;
     }
     private String getSQ_MasterDetail(){
