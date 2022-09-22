@@ -174,12 +174,10 @@ public class IncentiveReport {
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         String lsCondition = "";
-        String lsCondition1 = "";
+        String lsCondition1 = lsCondition =" AND LEFT(sTransNox, 4) = c.sBranchCD";
         String lsCondition2 = "";
         if(p_oBranch != null){
-            lsCondition = " AND LEFT(a.sTransNox, 4) LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
-        }else{
-            lsCondition =" AND c.sBranchCd = LEFT(a.sTransNox, 4)";
+            lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"))  ;
         }
         
         if(!fsValue.isEmpty()){
@@ -1566,7 +1564,7 @@ public class IncentiveReport {
                     ", IFNULL(b.sDeptName, '') xDeptName" +
                     ", 0.0 xTotalAmt" +
                 " FROM Incentive_Master a" +
-                        " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
+                    " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                     ", Branch c " +
                 " WHERE " + lsSQL ;
         
