@@ -179,7 +179,7 @@ public class Incentive {
                                
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
-                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    p_sMessage = p_oApp.getMessage() + " ; " + p_oApp.getErrMsg();
                     return false;
                 }
                 
@@ -273,7 +273,7 @@ public class Incentive {
             while (p_oDetail.next()){
                 lsSQL = MiscUtil.rowset2SQL(p_oDetail, 
                                             "Incentive_Detail", 
-                                            "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear", 
+                                            "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear;xIncentve;xDeductnx", 
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
                                                 " AND nEntryNox = " + p_oDetail.getInt("nEntryNox"));
                 
@@ -309,7 +309,7 @@ public class Incentive {
             while (p_oAllctn_Emp.next()){
                 lsSQL = MiscUtil.rowset2SQL(p_oAllctn_Emp, 
                                             "Incentive_Detail_Allocation_Employee", 
-                                            "xEmployNm;xInctvNme",
+                                            "xEmployNm;xInctvNme;nTotalAmt",
                                             "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
                                                 " AND sInctveCD = " + SQLUtil.toSQL(p_oAllctn_Emp.getString("sInctveCD")) +
                                                 " AND sEmployID = " + SQLUtil.toSQL(p_oAllctn_Emp.getString("sEmployID")));
@@ -639,6 +639,8 @@ public class Incentive {
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){
             if (!p_oApp.getDepartment().equals(AUDITOR)){
+                System.out.println(p_oApp.getDepartment());
+                System.out.println("Master Dept = " + getMaster("sDeptIDxx"));
                 if (!p_oApp.getDepartment().equals((String) getMaster("sDeptIDxx"))){
                     p_sMessage = "Unable to update other department transactions.";
                     return false;
@@ -2495,6 +2497,7 @@ public class Incentive {
         
         return true;
     }
+    
     
     public String getSQ_Master(){
         String lsSQL = "";
