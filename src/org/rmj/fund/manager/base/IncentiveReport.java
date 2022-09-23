@@ -61,6 +61,7 @@ public class IncentiveReport {
     private CachedRowSet p_oAllctn_Emp;
     private CachedRowSet p_oDedctn;
     private CachedRowSet p_oDedctn_Emp;
+    private CachedRowSet p_oEmployee;
     
     private LMasDetTrans p_oListener;
    
@@ -104,7 +105,7 @@ public class IncentiveReport {
     }
     
    
-    public boolean OpenTransaction(String fsValue) throws SQLException{
+    public boolean OpenTransactionEmployee(String fsValue) throws SQLException{
          
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -125,6 +126,40 @@ public class IncentiveReport {
 //            }
 //        }  
 //        
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+         String lsCondition ="";
+        if(p_oEmployee != null){
+            lsCondition = lsCondition + " AND a.sEmployID = " +  SQLUtil.toSQL(getEmployee("sEmployID"));      
+        }
+        if(p_oBranch != null){
+            lsCondition = lsCondition + " AND f.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
+        }
+        
+        if(!fsValue.isEmpty()){
+           lsCondition =  lsCondition + " AND g.sMonthxxx = " +SQLUtil.toSQL(fsValue);
+        }
+        
+        lsCondition =  lsCondition + " ORDER BY xInctvNme,j.sInctveCD,a.sTransNox ASC";
+        lsSQL = getSQ_EmployeeDetail() + lsCondition;
+        System.out.println(lsSQL);
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oDetail = factory.createCachedRowSet();
+        p_oDetail.populate(loRS);
+        MiscUtil.close(loRS);
+        p_nEditMode = EditMode.READY;
+        return true;
+    }
+    
+    public boolean OpenTransaction(String fsValue) throws SQLException{
+         
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        createDetail();
+        p_sMessage = "";
         String lsSQL;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
@@ -173,8 +208,7 @@ public class IncentiveReport {
         String lsSQL;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
-        String lsCondition = "";
-        String lsCondition1 = lsCondition =" AND LEFT(sTransNox, 4) = c.sBranchCD";
+        String lsCondition = lsCondition =" AND LEFT(sTransNox, 4) = c.sBranchCD";
         String lsCondition2 = "";
         if(p_oBranch != null){
             lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"))  ;
@@ -742,6 +776,22 @@ public class IncentiveReport {
         p_oBranch = null;
     }
     
+    
+    public Object getEmployee(int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oEmployee.first();
+        return p_oEmployee.getObject(fnIndex);
+    }
+    
+    public Object getEmployee(String fsIndex) throws SQLException{
+        return getEmployee(getColumnIndex(p_oEmployee, fsIndex));
+    }
+    
+    
+    public void setEmployee(){
+        p_oEmployee = null;
+    }
     
     
 //    public void setMaster(String fsIndex, Object foValue) throws SQLException{
@@ -1384,6 +1434,26 @@ public class IncentiveReport {
         p_oBranch = new CachedRowSetImpl();
         p_oBranch.setMetaData(meta);  
     }
+    private void createEmployee() throws SQLException{
+        RowSetMetaData meta = new RowSetMetaDataImpl();
+
+        meta.setColumnCount(3);
+
+        meta.setColumnName(1, "sEmployID");
+        meta.setColumnLabel(1, "sEmployID");
+        meta.setColumnType(1, Types.VARCHAR);
+
+        meta.setColumnName(2, "sEmployID");
+        meta.setColumnLabel(2, "sBranchNm");
+        meta.setColumnType(2, Types.VARCHAR);
+        
+        meta.setColumnName(3, "sPeriodxx");
+        meta.setColumnLabel(3, "sPeriodxx");
+        meta.setColumnType(3, Types.VARCHAR);
+        
+        p_oBranch = new CachedRowSetImpl();
+        p_oBranch.setMetaData(meta);  
+    }
     private void createMaster() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();
 
@@ -1576,6 +1646,7 @@ public class IncentiveReport {
                     " SUM(nTotalAmt) AS nTotalAmt" +
                 " FROM Incentive_Detail";
     }
+    
     private String getSQ_Detail(){
          String lsSQL = "";
         String lsStat = String.valueOf(p_nTranStat);
@@ -1618,12 +1689,66 @@ public class IncentiveReport {
                 "  Banks i " +
                 "WHERE a.sEmployID = b.sEmployID " +
                 "    AND " + lsSQL +
-                "    AND f.sBranchCd = LEFT(a.sTransNox, 4) " +
+                "    AND LEFT(a.sTransNox, 4) = f.sBranchCd " +
                 "    AND a.sTransNox = g.sTransNox " +
                 "    AND a.sEmployID = h.sEmployID "+
                 "    AND h.sBankIDxx = i.sBankIDxx ";
         return lsSQL;
     }
+    private String getSQ_EmployeeDetail(){
+         String lsSQL = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            
+            lsSQL = " AND g.cTranStat IN (" + lsSQL.substring(2) + ")";
+        } else{            
+            lsSQL = " AND g.cTranStat = " + SQLUtil.toSQL(lsStat);
+        }
+        lsSQL = "SELECT " +
+                "   IFNULL(a.sTransNox, '')    sTransNox, " +
+                "   IFNULL(a.nEntryNox, '')    nEntryNox, " +
+                "   IFNULL(a.sEmployID, '')    sEmployID, " +
+                "   IFNULL(a.nTotalAmt, '')    nTotalAmt, " +
+                "   IFNULL(c.sCompnyNm, '')    xEmployNm, " +
+                "   IFNULL(d.sEmpLevNm, '')    xEmpLevNm, " +
+                "   IFNULL(e.sPositnNm, '')    xPositnNm, " +
+                "   IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(b.dStartEmp, b.dHiredxxx)) / 365), '')    xSrvcYear, " +
+                "   f.sBranchNm    xBranchNm, " +
+                "   g.sMonthxxx, " +
+                "   g.sRemarksx, " +
+                "   g.cTranStat, " +
+                "  IFNULL(h.sBankAcct,'') xBankAcct, " +
+                "  IFNULL(i.sBankName,'') xBankName, " +
+                "   IFNULL(k.sInctveDs, '') xInctvNme" +
+                " FROM Incentive_Detail a, " +
+                "   Employee_Master001 b " +
+                "   LEFT JOIN Client_Master c " +
+                "     ON b.sEmployID = c.sClientID " +
+                "   LEFT JOIN Employee_Level d " +
+                "     ON b.sEmpLevID = d.sEmpLevID " +
+                "   LEFT JOIN `Position` e " +
+                "     ON b.sPositnID = e.sPositnID, " +
+                "   Branch f, " +
+                "   Incentive_Master g, " +
+                "   Employee_Incentive_Bank_Info h," +
+                "   Banks i, " +
+                "   Incentive_Detail_Allocation j, " +
+                "    Incentive k" +
+                " WHERE a.sEmployID = b.sEmployID " +
+                "     AND a.sTransNox = g.sTransNox " +
+                "     AND b.sBranchCD = f.sBranchCD " +
+                "     AND a.sEmployID = h.sEmployID " +
+                "     AND h.sBankIDxx = i.sBankIDxx " +
+                "     AND g.sTransNox = j.sTransNox " +
+                "     AND j.sInctveCD = k.sInctveCD " + 
+                lsSQL;
+        return lsSQL;
+    }
+    
     private String getSQ_MasterDetail(){
         return "SELECT" +
                     "  a.sTransNox" +
@@ -1706,6 +1831,113 @@ public class IncentiveReport {
                 " FROM Incentive_Detail_Ded_Allocation_Employee a" +
                     " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID";
     }
+    private String getSQ_Record(){
+        String lsSQL = "";
+        lsSQL =  "SELECT" +
+                    "  a.sEmployID" +
+                    ", b.sCompnyNm" +
+                    ", c.sBranchNm" +
+                    ", a.sBranchCd" +
+                " FROM Employee_Master001 a" +
+                    ", Client_Master b" +
+                    ", Branch c" +
+                " WHERE a.sEmployID = b.sClientID" +
+                    " AND a.sBranchCd = c.sBranchCd" +
+                    " AND a.cRecdStat = '1'" +
+                    " AND ISNULL(a.dFiredxxx)";
+        
+        return lsSQL;
+    }
+    public boolean searchEmployee(String fsValue, boolean fbByCode) throws SQLException{
+       
+        String lsSQL = "SELECT" +
+                            "  a.sEmployID" +
+                            ", b.sCompnyNm" +
+                            ", c.sBranchNm" +
+                            ", c.sBranchCD" +
+                        " FROM Employee_Master001 a" +
+                            ", Client_Master b" +
+                            ", Branch c" +
+                        " WHERE a.sEmployID = b.sClientID" +
+                            " AND a.sBranchCd = c.sBranchCd" +
+                            " AND a.cRecdStat = '1'" +
+                            " AND ISNULL(a.dFiredxxx)";
+        
+        ResultSet loRS;
+        JSONObject loJSON;
+        
+        if (p_bWithUI){
+            loJSON = showFXDialog.jsonSearch(
+                        p_oApp, 
+                        lsSQL, 
+                        fsValue, 
+                        "ID»Employee»Branch", 
+                        "a.sEmployID»b.sCompnyNm»c.sBranchNm", 
+                        "a.sEmployID»b.sCompnyNm»c.sBranchNm", 
+                        fbByCode ? 0 : 1);
+            
+            if (loJSON != null){
+                
+                lsSQL = MiscUtil.addCondition(getSQ_Record(), "a.sEmployID = " + SQLUtil.toSQL((String) loJSON.get("sEmployID"))); 
+                loRS = p_oApp.executeQuery(lsSQL);
+                
+                return OpenRecord((String) loJSON.get("sEmployID")) &&
+                        OpenBranch((String) loJSON.get("sBranchCD"));
+            }else{     
+                return false;
+            }
+            
+        }
+        
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sEmployID = " + SQLUtil.toSQL(fsValue));
+        else
+            lsSQL = MiscUtil.addCondition(lsSQL, "b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        
+        lsSQL += " LIMIT 1";
+        loRS = p_oApp.executeQuery(lsSQL);
+        
+        JSONArray loArray = MiscUtil.RS2JSON(loRS);
+        MiscUtil.close(loRS);
+        
+        if (loArray.isEmpty()) return false;
+        
+        loJSON = (JSONObject) loArray.get(0);
+        
+        if (loJSON != null){
+                lsSQL = MiscUtil.addCondition(getSQ_Record(), "a.sEmployID = " + SQLUtil.toSQL((String) loJSON.get("sEmployID"))); 
+                loRS = p_oApp.executeQuery(lsSQL);
+                return OpenRecord((String) loJSON.get("sEmployID"));
+        }else{
+            return false;
+        }
+    }
+    public boolean OpenRecord(String fsValue) throws SQLException{
+        p_nEditMode = EditMode.UNKNOWN;
+        
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        //open master
+        lsSQL = MiscUtil.addCondition(getSQ_Record(), "a.sEmployID = " + SQLUtil.toSQL(fsValue));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oEmployee = factory.createCachedRowSet();
+        p_oEmployee.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        if (p_oEmployee.size() == 0) return false;
+        p_nEditMode = EditMode.READY;
+        return true;
+    }
+    
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
         int lnIndex = 0;
         int lnRow = loRS.getMetaData().getColumnCount();
