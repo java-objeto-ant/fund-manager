@@ -168,6 +168,7 @@ public class DeptIncentive {
                 p_oDetail.updateObject("dLastUpdt", p_oApp.getServerDate());
                 p_oDetail.updateRow();
                 
+                System.out.println(p_oDetail.getString("xEmployNm") + " -->" + DecryptAmount(p_oDetail.getString("sNewAmtxx")));
                 lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Department_Incentive_Detail", "xEmployNm;xPositnNm;xBankName;xBankAcct");
                                
                 if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Detail", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
@@ -710,7 +711,7 @@ public class DeptIncentive {
         switch (fnIndex){
             case 5://sOldAmtxx
             case 6://sNewAmtxx
-                return p_oDetail.getObject(fnIndex);
+                return DecryptAmount((String) p_oDetail.getObject(fnIndex));
             default:
                 return p_oDetail.getObject(fnIndex);
         }
@@ -774,18 +775,12 @@ public class DeptIncentive {
         switch (fnIndex){
             case 6://sNewAmtxx
                 if (StringUtil.isNumeric(String.valueOf(foValue))) 
-                    p_oDetail.updateObject(fnIndex, (double) foValue);
+                    p_oDetail.updateObject(fnIndex, EncryptAmount((double) foValue));
                 else
-                    p_oDetail.updateObject(fnIndex, (0.00));
-
-//                
-//                if (p_oListener != null) p_oListener.DetailRetreive(fnRow,fnIndex,p_oDetail.getString(fnIndex));
+                    p_oDetail.updateObject(fnIndex, EncryptAmount(0.00));
                 break;
-            case 7://sRemarksx
-            
+            case 7://sRemarksx            
                 p_oDetail.updateString(fnIndex, (String) foValue);
-
-//                if (p_oListener != null) p_oListener.DetailRetreive(fnRow,fnIndex, p_oDetail.getString(fnIndex));
                 break;
         }
         
@@ -992,7 +987,6 @@ public class DeptIncentive {
                 
                 //recreate detail and other tables
                 createDetail();
-               
 
                 if (p_oListener != null) p_oListener.MasterRetreive(13, getMaster("xDeptName"));
                 
@@ -1187,8 +1181,8 @@ public class DeptIncentive {
                 p_oDetail.updateString("xBankAcct", loRS.getString("xBankAcct"));
                 p_oDetail.updateString("xBankName", loRS.getString("xBankName"));
                 p_oDetail.updateObject("dLastUpdt", p_oApp.getServerDate());
-                p_oDetail.updateObject("sOldAmtxx", 0.00);
-                p_oDetail.updateObject("sNewAmtxx", 0.00);
+                p_oDetail.updateObject("sOldAmtxx", EncryptAmount(0.00));
+                p_oDetail.updateObject("sNewAmtxx", EncryptAmount(0.00));
 
 
                 p_oDetail.insertRow();
@@ -1420,7 +1414,7 @@ public class DeptIncentive {
 //                p_sMessage =  "Bank Account not available.";
 //                return false;
 //            }  
-            if ((p_oDetail.getDouble("sNewAmtxx")) < 0.00){
+            if (DecryptAmount(p_oDetail.getString("sNewAmtxx")) < 0.00){
                 p_sMessage = p_oDetail.getString("sNewAmtxx") + " has negative new incentive amount.";
                 return false;
             }  

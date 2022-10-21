@@ -5,18 +5,39 @@
 package org.rmj.fund.manager.base;
 
 import com.sun.rowset.CachedRowSetImpl;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetMetaDataImpl;
 import javax.sql.rowset.RowSetProvider;
+import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
+import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.StringUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
@@ -300,7 +321,21 @@ public class DeptIncentiveRelease {
         p_oMaster.moveToCurrentRow();
     }
     private String getSQ_Master(){
-        return "SELECT" +
+        String lsSQL = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            
+            lsSQL = " AND cTranStat IN (" + lsSQL.substring(2) + ")";
+        } else{            
+            lsSQL = " AND cTranStat = " + SQLUtil.toSQL(lsStat);
+        }
+        
+        return MiscUtil.addCondition(
+                "SELECT" +
                     "  sTransNox" +
                     ", dTransact" +
                     ", sApproved" +
@@ -311,23 +346,10 @@ public class DeptIncentiveRelease {
                     ", cTranStat" +
                     ", sModified" +
                     ", dModified" +
-                " FROM Incentive_Releasing_Master";
+                " FROM Incentive_Releasing_Master", lsSQL);
     }
     public String getSQ_DeptMaster(){
-        String lsSQL = "";
-        String lsStat = String.valueOf(p_nTranStat);
-        
-        if (lsStat.length() > 1){
-            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-            
-            lsSQL = " AND a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else{            
-            lsSQL = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
-        }
-                
-        lsSQL = "SELECT" + 
+        return "SELECT" + 
                     "  IFNULL(a.sTransNox,'') sTransNox" +
                     ", IFNULL(a.dTransact,'') dTransact" +
                     ", IFNULL(a.sDeptIDxx,'') sDeptIDxx" +
@@ -347,10 +369,7 @@ public class DeptIncentiveRelease {
                         " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                         " LEFT JOIN Incentive d ON a.sInctveCD = d.sInctveCD" +
                     ", Branch c " +
-                " WHERE LEFT(a.sTransNox, 4) = c.sBranchCd" +
-                    lsSQL;
-        
-        return lsSQL;
+                " WHERE LEFT(a.sTransNox, 4) = c.sBranchCd";
     }
     
     private String getSQ_DeptDetail(){
@@ -392,12 +411,20 @@ public class DeptIncentiveRelease {
         switch (fnIndex){
             case 5://sOldAmtxx
             case 6://sNewAmtxx
-                return p_oDeptDetail.getObject(fnIndex);
+                return DecryptAmount((String) p_oDeptDetail.getObject(fnIndex));
             default:
                 return p_oDeptDetail.getObject(fnIndex);
         }
 
 //        return p_oDetail.get(fnRow);
+    }
+    
+    private double DecryptAmount(String fsValue){
+        return Double.valueOf(MySQLAESCrypt.Decrypt(fsValue, p_oApp.SIGNATURE));
+    }
+    
+    private String EncryptAmount(double fnValue){
+        return MySQLAESCrypt.Encrypt(String.valueOf(fnValue), p_oApp.SIGNATURE);
     }
     
     public Object getDeptDetail(int fnRow, String fsIndex) throws SQLException{
@@ -407,7 +434,6 @@ public class DeptIncentiveRelease {
         p_oDeptMaster.last();
         return p_oDeptMaster.getRow();
     }
-    
     
     public Object getDeptMaster(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -498,7 +524,6 @@ public class DeptIncentiveRelease {
         MiscUtil.initRowSet(p_oDeptMaster);     
         String lsSQL= getSQ_DeptMaster();
        
-        
         p_oTag = new ArrayList<>();
         
        lsSQL = MiscUtil.addCondition(lsSQL, " TRIM(a.sBatchNox) IS NULL");
@@ -648,11 +673,11 @@ public class DeptIncentiveRelease {
         p_oTag = new ArrayList<>();
         
         
-       loRS = p_oApp.executeQuery(lsSQL);
+        loRS = p_oApp.executeQuery(lsSQL);
        
-       p_oTag = new ArrayList<>();
-       int lnRow = 1;
-       while (loRS.next()){
+        p_oTag = new ArrayList<>();
+        int lnRow = 1;
+        while (loRS.next()){
             p_oDeptMaster.last();
             p_oDeptMaster.moveToInsertRow();
 
@@ -675,8 +700,8 @@ public class DeptIncentiveRelease {
             p_oTag.add("1");
             p_oDeptMaster.insertRow();
             p_oDeptMaster.moveToCurrentRow();
-           if (OpenDeptTransaction(loRS.getString("sTransNox"))){
-               
+            
+            if (OpenDeptTransaction(loRS.getString("sTransNox"))){   
             }
             lnRow++;
         }
@@ -812,10 +837,10 @@ public class DeptIncentiveRelease {
             return false;
         }
         
-//        if (((String) getMaster("cTranStat")).equals("2")){
-//            p_sMessage = "Unable to confirm already posted transactions.";
-//            return false;
-//        }
+        if (((String) getMaster("cTranStat")).equals("2")){
+            p_sMessage = "Unable to confirm already posted transactions.";
+            return false;
+        }
         
         if (((String) getMaster("cTranStat")).equals("3")){
             p_sMessage = "Unable to confirm already cancelled transactions.";
@@ -837,6 +862,179 @@ public class DeptIncentiveRelease {
         if (p_oListener != null) p_oListener.MasterRetreive(8, "1");
         
         p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    public boolean ReleaseTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        if (p_nEditMode != EditMode.READY){
+            p_sMessage = "Invalid update mode detected.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_bWithParent) {
+            p_sMessage = "Approving transactions from other object is not allowed.";
+            return false;
+        }
+        
+        if (((String) getMaster("cTranStat")).equals("0")){
+            p_sMessage = "Unable to release unapproved transactions.";
+            return false;
+        }
+        
+        if (((String) getMaster("cTranStat")).equals("2")){
+            p_sMessage = "Unable to release already posted transactions.";
+            return false;
+        }
+        
+        if (((String) getMaster("cTranStat")).equals("3")){
+            p_sMessage = "Unable to release cancelled transactions.";
+            return false;
+        }
+        
+        //export with bank
+        if (!exportWBank()) return false;
+        
+        //export no bank
+        if (!exportNBank()) return false;
+        
+        String lsSQL;
+        lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                    "  cTranStat = '2'" +
+                    ", sModified = " + SQLUtil.toSQL(p_oApp.getUserID()) +
+                    ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+                " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+        
+        if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, ((String) getMaster("sTransNox")).substring(0, 4)) <= 0){
+            p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
+            return false;
+        }
+        
+        if (p_oListener != null) p_oListener.MasterRetreive(8, "1");
+        
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    
+    private boolean exportWBank(){
+        try {
+            p_oDeptMaster.beforeFirst();
+            
+            String dir = System.getProperty("sys.default.path.config") + "/temp/";
+            
+            File path = new File(dir + "BDO ATM Payroll Converter.XLS");
+            FileInputStream file = new FileInputStream(path);
+
+            Workbook workbook = new HSSFWorkbook(new POIFSFileSystem(file), true);
+            Sheet sheet = workbook.getSheetAt(0);
+            file.close();
+            
+            Cell cell;
+            Row row;
+            
+            int lnRow = 5;
+            
+            while (p_oDeptMaster.next()){
+                if (OpenDeptTransaction(p_oDeptMaster.getString("sTransNox"))){   
+                    p_oDeptDetail.beforeFirst();
+                    while(p_oDeptDetail.next()){
+                        if (!p_oDeptDetail.getString("xBankAcct").isEmpty() &&
+                            DecryptAmount(p_oDeptDetail.getString("sNewAmtxx")) > 0.00){
+                            
+                            lnRow ++;
+                            row = sheet.createRow(lnRow);
+                            
+                            cell = row.createCell(0);
+                            cell.setCellValue(p_oDeptDetail.getString("xBankAcct"));
+                            
+                            cell = row.createCell(1);
+                            cell.setCellValue(DecryptAmount(p_oDeptDetail.getString("sNewAmtxx")));
+                            
+                            cell = row.createCell(2);
+                            cell.setCellValue(p_oDeptDetail.getString("xEmployNm"));
+                        }
+                    }
+                }
+            }
+            
+            FileOutputStream outputFile= new FileOutputStream(dir + "incentive/BDO ATM Payroll Converter - " + p_oMaster.getString("sTransNox") + ".XLS");
+            workbook.write(outputFile);
+            outputFile.close();
+            workbook.close();
+        } catch (SQLException | FileNotFoundException | EncryptedDocumentException e) {
+            p_sMessage = e.getMessage();
+            e.printStackTrace();
+            return false;
+        } catch (IOException ex) {
+            p_sMessage = ex.getMessage();
+            ex.printStackTrace();
+            return false;
+        }
+        
+        return true;
+    }    
+    
+    private boolean exportNBank(){
+        try {
+            p_oDeptMaster.beforeFirst();
+            
+            String dir = System.getProperty("sys.default.path.config") + "/temp/";
+            
+            File path = new File(dir + "No Bank.xls");
+            FileInputStream file = new FileInputStream(path);
+
+            Workbook workbook = WorkbookFactory.create(new File(System.getProperty("sys.default.path.config") + "/temp/No Bank.xls"));
+            Sheet sheet = workbook.getSheetAt(0);
+            file.close();
+            
+            Cell cell;
+            Row row;
+            
+            int lnRow = 0;
+            
+            while (p_oDeptMaster.next()){
+                if (OpenDeptTransaction(p_oDeptMaster.getString("sTransNox"))){   
+                    p_oDeptDetail.beforeFirst();
+                    while(p_oDeptDetail.next()){
+                        if (p_oDeptDetail.getString("xBankAcct").isEmpty() ||
+                            DecryptAmount(p_oDeptDetail.getString("sNewAmtxx")) <= 0.00){
+                            
+                            lnRow ++;
+                            row = sheet.createRow(lnRow);
+                            
+                            cell = row.createCell(0);
+                            cell.setCellValue(p_oDeptDetail.getString("xBankAcct"));
+                            
+                            cell = row.createCell(1);
+                            cell.setCellValue(DecryptAmount(p_oDeptDetail.getString("sNewAmtxx")));
+                            
+                            cell = row.createCell(2);
+                            cell.setCellValue(p_oDeptDetail.getString("xEmployNm"));
+                        }
+                    }
+                }
+            }
+            
+            FileOutputStream outputStream = new FileOutputStream(dir + "incentive/No Bank - " + p_oMaster.getString("sTransNox") + ".xls");
+            workbook.write(outputStream);
+            outputStream.close();
+            workbook.close();
+        } catch (SQLException | FileNotFoundException e) {
+            p_sMessage = e.getMessage();
+            e.printStackTrace();
+            return false;
+        } catch (IOException ex) {
+            p_sMessage = ex.getMessage();
+            ex.printStackTrace();
+            return false;
+        }
+        
         return true;
     }
     
