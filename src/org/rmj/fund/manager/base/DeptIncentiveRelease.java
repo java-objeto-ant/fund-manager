@@ -329,9 +329,9 @@ public class DeptIncentiveRelease {
                 lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
             }
             
-            lsSQL = " AND cTranStat IN (" + lsSQL.substring(2) + ")";
+            lsSQL = "cTranStat IN (" + lsSQL.substring(2) + ")";
         } else{            
-            lsSQL = " AND cTranStat = " + SQLUtil.toSQL(lsStat);
+            lsSQL = "cTranStat = " + SQLUtil.toSQL(lsStat);
         }
         
         return MiscUtil.addCondition(
