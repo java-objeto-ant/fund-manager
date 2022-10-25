@@ -13,6 +13,7 @@ import javax.sql.rowset.RowSetProvider;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
+import org.rmj.appdriver.GSec;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
@@ -27,16 +28,8 @@ import org.rmj.fund.manager.parameters.IncentiveBankInfo;
  * @author Michael Cuison
  * @since October 11, 2021
  */
-public class DeptIncentive {
-    private final String FINANCE = "028";
-    private final String AUDITOR = "034";
-    private final String COLLECTION = "022";
-    private final String MAIN_OFFICE = "M001»M0W1";
-    
+public class DeptIncentive {    
     private final String DEBUG_MODE = "app.debug.mode";
-    private final String REQUIRE_CSS = "app.require.css.approval";
-    private final String REQUIRE_CM = "app.require.cm.approval";
-    private final String REQUIRE_BANK_ON_APPROVAL = "app.require.bank.on.approval";
     private final String RELEASE_TABLE = "Incentive_Releasing_Master";
     
     private final GRider p_oApp;
@@ -61,7 +54,7 @@ public class DeptIncentive {
         p_bWithParent = fbWithParent;        
                 
         if (p_sBranchCd.isEmpty()) p_sBranchCd = p_oApp.getBranchCode();
-         p_oBankInfo = new IncentiveBankInfo(p_oApp, p_sBranchCd, true);
+        p_oBankInfo = new IncentiveBankInfo(p_oApp, p_sBranchCd, true);
         p_oBankInfo.setRecordStat(1);
         loadConfig();
         
@@ -98,23 +91,18 @@ public class DeptIncentive {
             return false;
         }
         
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
-        } 
+        p_nEditMode = EditMode.UNKNOWN;
+        
+        if (!GSec.isIncAuthEntry(p_oApp.getEmployeeNo()) &&
+            !GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
+        }
         
         p_sMessage = "";
         
         createMaster();
         createDetail();
-
 
         p_nEditMode = EditMode.ADDNEW;
         return true;
@@ -132,7 +120,7 @@ public class DeptIncentive {
             p_nEditMode != EditMode.UPDATE){
             p_sMessage = "Invalid edit mode detected.";
             return false;
-        }
+        }      
         
         if (!isEntryOK()) return false;
         
@@ -234,67 +222,7 @@ public class DeptIncentive {
             return true;
         }
     }
-    
-    
-    public boolean ReleaseTransaction() throws SQLException{
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";
-        
-        if (p_nEditMode != EditMode.ADDNEW){
-            p_sMessage = "Invalid edit mode detected.";
-            return false;
-        }
-        
-        if (!isEntryOK()){
-            p_sMessage = "No record was tagged for release.";
-            return false;
-        }
-        
-        String lsTransNox = MiscUtil.getNextCode(RELEASE_TABLE, "sTransNox", true, p_oApp.getConnection(), p_sBranchCd);
-        
-        if (!p_bWithParent) p_oApp.beginTrans();
-        
-        String lsSQL;
-        int lnCtr, lnCtr2, lnCtr3 = 0;
-        double lnTranTotl = 0.00;
-        
-        lsSQL = "UPDATE Department_Incentive_Master SET" +
-                            "  sBatchNox = " + SQLUtil.toSQL(lsTransNox) +
-                        " WHERE sTransNox = " + SQLUtil.toSQL((String) p_oMaster.getString("sTransNox"));
-        
-        if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Master", p_sBranchCd, ((String) p_oMaster.getString("sTransNox")).substring(0, 4)) <= 0){
-            if (!p_bWithParent) p_oApp.rollbackTrans();
-            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-            return false;
-        }
-       for (lnCtr2 = 1; lnCtr2 <= getItemCount(); lnCtr2++){
-            lnTranTotl += (double) getDetail(lnCtr2, "sNewAmtxx");
-        }
-        p_oMaster.first();
-        p_oMaster.updateObject("sTransNox", lsTransNox);
-        p_oMaster.updateObject("nTranTotl", lnTranTotl);
-        p_oMaster.updateObject("nEntryNox", getItemCount());
-        p_oMaster.updateObject("sModified", p_oApp.getUserID());
-        p_oMaster.updateObject("dModified", p_oApp.getServerDate());        
-        
-        lsSQL = MiscUtil.rowset2SQL(p_oMaster, RELEASE_TABLE, "");
-        
-        if (p_oApp.executeQuery(lsSQL, "MASTER_TABLE", p_sBranchCd, "") <= 0){
-            if (!p_bWithParent) p_oApp.rollbackTrans();
-            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-            return false;
-        }
-        
-        if (!p_bWithParent) p_oApp.commitTrans();
-        
-        p_nEditMode = EditMode.UNKNOWN;
-        return true;
-    }
-    
+
     public boolean SearchTransaction(String fsValue, boolean fbByCode) throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -303,29 +231,21 @@ public class DeptIncentive {
         
         p_sMessage = "";
         
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
-        }        
-        
-        String lsSQL = getSQ_Master();
         String lsCondition = "";
         
-//        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
-//            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment()))
-//                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
-//        } else
-//            lsCondition = "a.sDeptIDxx LIKE " + SQLUtil.toSQL(p_oApp.getDepartment() + "%");
-//        
-//        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
-//        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            if (!GSec.isIncAuthEntry(p_oApp.getEmployeeNo())){
+                p_sMessage = "Your account is not authorized to use this feature.";
+                return false;
+            } else {
+                lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+            }
+        }       
+        
+        String lsSQL = getSQ_Master();
+        
+        if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                     p_oApp, 
@@ -374,18 +294,6 @@ public class DeptIncentive {
         
         p_sMessage = "";
         
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
-        }  
-        
         String lsSQL;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
@@ -404,9 +312,19 @@ public class DeptIncentive {
         p_oDetail.populate(loRS);
         MiscUtil.close(loRS);
         
-       
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            if (!GSec.isIncAuthEntry(p_oApp.getEmployeeNo())){
+                p_sMessage = "Your account is not authorized to use this feature.";
+                return false;
+            } else {
+                p_oMaster.first();
+                if (!p_oMaster.getString("sDeptIDxx").equals(p_oApp.getDepartment())){
+                    p_sMessage = "Your account is not allowed to load other department incentive.";
+                    return false;
+                }
+            }
+        }
         
-//        computeEmpTotalIncentiveAmount();
         p_nEditMode = EditMode.READY;
         
         return true;
@@ -445,15 +363,6 @@ public class DeptIncentive {
             return false;
         }
         
-        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){
-            if (!p_oApp.getDepartment().equals(AUDITOR)){
-                if (!p_oApp.getDepartment().equals((String) getMaster("sDeptIDxx"))){
-                    p_sMessage = "Unable to update other department transactions.";
-                    return false;
-                }
-            }
-        }
-        
         p_nEditMode = EditMode.UPDATE;
         return true;
     }
@@ -481,20 +390,10 @@ public class DeptIncentive {
             return false;
         }
         
-               
-//        //check bank information
-//        if (System.getProperty(REQUIRE_BANK_ON_APPROVAL).equals("1")){
-//            IncentiveBankInfo loBank;
-//            p_oDetail.beforeFirst();
-//            while (p_oDetail.next()){
-//                loBank = getBankInfo(p_oDetail.getString("sEmployID"));
-//
-//                if (loBank == null){
-//                    p_sMessage = "Some associates has no bank account.";
-//                    return false;
-//                }
-//            }
-//        }
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to approve incentive.";
+            return false;
+        } 
         
         String lsTransNox = (String) getMaster("sTransNox");
         String lsSQL = "UPDATE Department_Incentive_Master SET" +
@@ -518,11 +417,6 @@ public class DeptIncentive {
         
         p_sMessage = "";
         
-        if (!p_oApp.getDepartment().equals(FINANCE)){
-            p_sMessage = "Only FM Department can use this feature.";
-            return false;
-        }
-        
         if (((String) getMaster("cTranStat")).equals("2")){
             p_sMessage = "Transaction was already posted..";
             return false;
@@ -537,6 +431,11 @@ public class DeptIncentive {
             p_sMessage = "Unable to post cancelled transactions.";
             return false;
         }
+        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to approve incentive.";
+            return false;
+        } 
         
         String lsTransNox = (String) getMaster("sTransNox");
         String lsSQL = "UPDATE Department_Incentive_Master SET" +
@@ -577,8 +476,20 @@ public class DeptIncentive {
         
         if (((String) getMaster("cTranStat")).equals("1")){
               p_sMessage = "Transaction was already approved.";
-            return false;
-           
+            return false;  
+        }
+        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            if (!GSec.isIncAuthEntry(p_oApp.getEmployeeNo())){
+                p_sMessage = "Your account is not authorized to use this feature.";
+                return false;
+            } else {
+                p_oMaster.first();
+                if (!p_oMaster.getString("sDeptIDxx").equals(p_oApp.getDepartment())){
+                    p_sMessage = "Your account is not allowed to cancel other department incentive.";
+                    return false;
+                }
+            }
         }
         
         String lsTransNox = (String) getMaster("sTransNox");
@@ -594,110 +505,7 @@ public class DeptIncentive {
         p_nEditMode = EditMode.UNKNOWN;
         return true;
     }
-    
-    public boolean ApprovedTransactionCSS() throws SQLException{
-        if (p_nEditMode != EditMode.READY){
-            p_sMessage = "Invalid update mode detected.";
-            return false;
-        }
         
-        p_sMessage = "";
-        
-        if (p_bWithParent) {
-            p_sMessage = "Approving transactions from other object is not allowed.";
-            return false;
-        }
-        
-        if (!p_oApp.getDepartment().equals(COLLECTION)){
-            p_sMessage = "Only CSS Department can use this feature.";
-            return false;
-        }
-        
-        if (((String) getMaster("cTranStat")).equals("0")){
-            p_sMessage = "Unable to approve unconfirmed transactions.";
-            return false;
-        }
-        
-        if (((String) getMaster("cTranStat")).equals("2")){
-            p_sMessage = "Unable to approve posted transactions.";
-            return false;
-        }
-        
-        if (((String) getMaster("cTranStat")).equals("3")){
-            p_sMessage = "Unable to approve cancelled transactions.";
-            return false;
-        }
-        
-        if (((String) getMaster("cApprovd1")).equals("1")){
-            p_sMessage = "This transaction was already approved by your department.";
-            return false;
-        }
-        
-        String lsTransNox = (String) getMaster("sTransNox");
-        String lsSQL = "UPDATE Department_Incentive_Master SET" +
-                            ", sApproved = " + SQLUtil.toSQL(p_oApp.getUserID()) +
-                            ", dApproved = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
-                        " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
-        
-        if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Master", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
-            p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
-            return false;
-        }
-        
-        p_nEditMode = EditMode.UNKNOWN;
-        return true;
-    }
-    
-    public boolean ApprovedTransaction() throws SQLException{
-        if (p_nEditMode != EditMode.READY){
-            p_sMessage = "Invalid update mode detected.";
-            return false;
-        }
-        
-        p_sMessage = "";
-        
-        if (p_bWithParent) {
-            p_sMessage = "Approving transactions from other object is not allowed.";
-            return false;
-        }
-        
-        if (!p_oApp.getDepartment().equals(AUDITOR)){
-            p_sMessage = "Only CM Department can use this feature.";
-            return false;
-        }
-        
-        if (((String) getMaster("cTranStat")).equals("0")){
-            p_sMessage = "Unable to approve unconfirmed transactions.";
-            return false;
-        }
-        
-        if (((String) getMaster("cTranStat")).equals("2")){
-            p_sMessage = "Unable to approve posted transactions.";
-            return false;
-        }
-        
-        if (((String) getMaster("cTranStat")).equals("3")){
-            p_sMessage = "Unable to approve cancelled transactions.";
-            return false;
-        }
-        
-        String lsTransNox = (String) getMaster("sTransNox");
-        String lsSQL = "UPDATE Department_Incentive_Master SET" +
-                            ", sApproved = " + SQLUtil.toSQL(p_oApp.getUserID()) +
-                            ", dApproved = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
-                        " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
-        
-        if (p_oApp.executeQuery(lsSQL, "Department_Incentive_Master", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
-            p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
-            return false;
-        }
-        
-        p_nEditMode = EditMode.UNKNOWN;
-        return true;
-    }
-    
-    
-    
     public int getItemCount() throws SQLException{
         p_oDetail.last();
         return p_oDetail.getRow();
@@ -1374,29 +1182,31 @@ public class DeptIncentive {
         return MySQLAESCrypt.Encrypt(String.valueOf(fnValue), p_oApp.SIGNATURE);
     }
     
-    private boolean isEntryOK() throws SQLException{    
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
-        }  
-        
+    private boolean isEntryOK() throws SQLException{        
         //validate master
         p_oMaster.first();
-        if (p_oMaster.getString("dEffctive").isEmpty()){
-            p_sMessage = "Effective period must not be empty.";
-            return false;
-        }
         if (p_oMaster.getString("sDeptIDxx").isEmpty()){
             p_sMessage = "Department must not be empty.";
             return false;
         }
+        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            if (!GSec.isIncAuthEntry(p_oApp.getEmployeeNo())){
+                p_sMessage = "Your account is not authorized to use this feature.";
+                return false;
+            } else {
+                if (!p_oMaster.getString("sDeptIDxx").equals(p_oApp.getDepartment())){
+                    p_sMessage = "Your account is not allowed to encode other department incentive.";
+                    return false;
+                }
+            }
+        }
+        
+        if (p_oMaster.getString("dEffctive").isEmpty()){
+            p_sMessage = "Effective period must not be empty.";
+            return false;
+        }
+        
         if (p_oMaster.getString("sInctveCD").isEmpty()){
             p_sMessage = "Incentive must not be empty.";
             return false;
@@ -1438,18 +1248,18 @@ public class DeptIncentive {
         }
                 
         lsSQL = "SELECT" + 
-                    "  IFNULL(a.sTransNox,'') sTransNox" +
-                    ", IFNULL(a.dTransact,'') dTransact" +
-                    ", IFNULL(a.sDeptIDxx,'') sDeptIDxx" +
-                    ", IFNULL(a.sInctveCD,'') sInctveCD" +
-                    ", IFNULL(a.sRemarksx,'') sRemarksx" +
-                    ", IFNULL(a.dEffctive,'') dEffctive" +
-                    ", IFNULL(a.cTranStat,'') cTranStat" +
-                    ", IFNULL(a.sApproved,'') sApproved" +
-                    ", IFNULL(a.dApproved,'') dApproved" +
-                    ", IFNULL(a.sModified,'') sModified" +
-                    ", IFNULL(a.dModified,'') dModified" +
-                    ", IFNULL(c.sBranchNm,'') xBranchNm" +
+                    "  IFNULL(a.sTransNox, '') sTransNox" +
+                    ", IFNULL(a.dTransact, '') dTransact" +
+                    ", IFNULL(a.sDeptIDxx, '') sDeptIDxx" +
+                    ", IFNULL(a.sInctveCD, '') sInctveCD" +
+                    ", IFNULL(a.sRemarksx, '') sRemarksx" +
+                    ", IFNULL(a.dEffctive, '') dEffctive" +
+                    ", IFNULL(a.cTranStat, '') cTranStat" +
+                    ", IFNULL(a.sApproved, '') sApproved" +
+                    ", IFNULL(a.dApproved, '') dApproved" +
+                    ", IFNULL(a.sModified, '') sModified" +
+                    ", IFNULL(a.dModified, '') dModified" +
+                    ", IFNULL(c.sBranchNm, '') xBranchNm" +
                     ", IFNULL(b.sDeptName, '') xDeptName" +
                     ", IFNULL(d.sInctveDs, '') xInctvNme" +
                 " FROM Department_Incentive_Master a" +
@@ -1521,16 +1331,17 @@ public class DeptIncentive {
                 }
             }
         }
-        
-       
+
         return lnIndex;
     }
     
     private void loadConfig(){
-        //update the value on configuration before deployment
-        System.setProperty(DEBUG_MODE, "0"); 
-        System.setProperty(REQUIRE_CSS, "0");
-        System.setProperty(REQUIRE_CM, "1");
-        System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
+        if (p_oApp.getDepartment().equals("026"))
+            System.setProperty(DEBUG_MODE, "1"); 
+        else
+            System.setProperty(DEBUG_MODE, "0"); 
+        
+        GSec.AuthIncEntry(p_oApp);
+        GSec.AuthIncMaster(p_oApp);
     }
 }
