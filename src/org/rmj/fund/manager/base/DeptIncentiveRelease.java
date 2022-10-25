@@ -10,14 +10,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
@@ -25,43 +21,33 @@ import javax.sql.rowset.RowSetMetaDataImpl;
 import javax.sql.rowset.RowSetProvider;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
+import org.rmj.appdriver.GSec;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
-import org.rmj.appdriver.StringUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.TransactionStatus;
 import org.rmj.appdriver.constants.UserRight;
-import org.rmj.fund.manager.parameters.IncentiveBankInfo;
 
 /**
  *
  * @author User
  */
 public class DeptIncentiveRelease {
-    private final String FINANCE = "028";
     private final String DEBUG_MODE = "app.debug.mode";
-    private final String REQUIRE_CSS = "app.require.css.approval";
-    private final String REQUIRE_CM = "app.require.cm.approval";
     private final String MASTER_TABLE = "Incentive_Releasing_Master";
-    private final String DEPT_MASTER_TABLE = "Incentive_Releasing_Master";
-    private final String DEPT_DETAIL_TABLE = "Incentive_Releasing_Master";
-    
+
     private final GRider p_oApp;
     private final boolean p_bWithParent;
-    private boolean p_oNew;
     
     private final DeptIncentive p_oIncentive;
     private ArrayList<CachedRowSet> p_oDetail;
@@ -114,10 +100,13 @@ public class DeptIncentiveRelease {
     }
     
     private void loadConfig(){
-        //update the value on configuration before deployment
-        System.setProperty(DEBUG_MODE, "1"); 
-        System.setProperty(REQUIRE_CSS, "1");
-        System.setProperty(REQUIRE_CM, "1");
+        if (p_oApp.getDepartment().equals("026"))
+            System.setProperty(DEBUG_MODE, "1"); 
+        else
+            System.setProperty(DEBUG_MODE, "0"); 
+        
+        GSec.AuthIncEntry(p_oApp);
+        GSec.AuthIncMaster(p_oApp);
     }
     private void createDetail() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
@@ -486,34 +475,20 @@ public class DeptIncentiveRelease {
        
         return lnIndex;
     }
-//     private int getColumnIndex(String fsValue) throws SQLException{
-//        int lnIndex = 0;
-//        int lnRow = p_oMaster.getMetaData().getColumnCount();
-//        
-//        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-//            if (fsValue.equals(p_oMaster.getMetaData().getColumnLabel(lnCtr))){
-//                lnIndex = lnCtr;
-//                break;
-//            }
-//        }
-//        
-//        return lnIndex;
-//    }
+
     public boolean NewTransaction() throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
         }
-        
-        if (!System.getProperty(DEBUG_MODE).equals("1")){
-            if (p_oApp.getDepartment().equals(FINANCE)){
-                p_sMessage = "User is not allowed to use this application.";
-                return false;
-            }
-        }
-        
+
         p_sMessage = "";
-        p_oNew = true;
+        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
+        } 
+        
         initMaster();
         createMaster(); 
         createDetail();
@@ -526,10 +501,10 @@ public class DeptIncentiveRelease {
        
         p_oTag = new ArrayList<>();
         
-       lsSQL = MiscUtil.addCondition(lsSQL, " TRIM(a.sBatchNox) IS NULL");
-       ResultSet loRS = p_oApp.executeQuery(lsSQL);
-       int lnRow = 1;
-       while (loRS.next()){
+        lsSQL = MiscUtil.addCondition(lsSQL, " TRIM(a.sBatchNox) IS NULL");
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        int lnRow = 1;
+        while (loRS.next()){
             p_oDeptMaster.last();
             p_oDeptMaster.moveToInsertRow();
 
@@ -567,25 +542,17 @@ public class DeptIncentiveRelease {
         
         p_sMessage = "";
         
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
         }        
         
         String lsSQL = getSQ_Master();
-        String lsCondition = "";
+        String lsCondition;
         
         lsCondition = "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%");
         
         if (!lsSQL.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
-        p_oNew = false;
         
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
@@ -636,17 +603,10 @@ public class DeptIncentiveRelease {
         
         p_sMessage = "";
         
-        if (System.getProperty(DEBUG_MODE).equals("0")){
-            if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1){
-                p_sMessage = "Your employee level is not authorized to use this transaction.";
-                return false;
-            }
-
-            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
-                p_sMessage = "Your account level is not authorized to use this transaction.";
-                return false;
-            }
-        }  
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
+        } 
         
         createMaster(); 
         createDetail();
@@ -827,6 +787,11 @@ public class DeptIncentiveRelease {
         
         p_sMessage = "";
         
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
+        } 
+        
         if (p_bWithParent) {
             p_sMessage = "Approving transactions from other object is not allowed.";
             return false;
@@ -877,6 +842,11 @@ public class DeptIncentiveRelease {
         }
         
         p_sMessage = "";
+        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
+        } 
         
         if (p_bWithParent) {
             p_sMessage = "Approving transactions from other object is not allowed.";
@@ -1050,6 +1020,11 @@ public class DeptIncentiveRelease {
         }
         
         p_sMessage = "";
+        
+        if (!GSec.isIncAuthMaster(p_oApp.getEmployeeNo())){
+            p_sMessage = "Your account is not authorized to use this feature.";
+            return false;
+        } 
         
         if (p_bWithParent) {
             p_sMessage = "Approving transactions from other object is not allowed.";
