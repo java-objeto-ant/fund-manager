@@ -5,7 +5,10 @@
         <group name="guanzon"/>
         <group name="LOCAL"/>
         <group>
-            <file>file:/C:/Users/User/Guanzon/github/fund-manager/src/org/rmj/fund/manager/base/BankInfoReport.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/fund-manager/src/org/rmj/fund/manager/base/Incentive.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/fund-manager/src/org/rmj/fund/manager/parameters/Panalo.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/fund-manager/src/org/rmj/fund/manager/base/Panalo.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/fund-manager/src/org/rmj/fund/manager/base/PanaloRedemption.java</file>
         </group>
     </open-files>
 </project-private>
