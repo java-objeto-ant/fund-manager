@@ -84,7 +84,7 @@ public class Panalo {
         }
         
         
-        if ("0".equals(p_oRecord.getString("cTranStat"))){
+        if ("4".equals(p_oRecord.getString("cTranStat"))){
             p_sMessage = "Unable to post voided transactions.";
             return false;
         }
@@ -117,7 +117,7 @@ public class Panalo {
         
         p_oRecord.first();
         
-        if ("0".equals(p_oRecord.getString("cTranStat"))){
+        if ("4".equals(p_oRecord.getString("cTranStat"))){
             p_sMessage = "Record is already voided..";
             return false;
         }
@@ -128,7 +128,7 @@ public class Panalo {
         }  
         
         String lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
-                            "  cTranStat = '0'" +
+                            "  cTranStat = '4'" +
                             ", sModified = " + SQLUtil.toSQL(p_oApp.getUserID()) +
                             ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
                         " WHERE sPanaloCD = " + SQLUtil.toSQL(p_oRecord.getString("sPanaloCD"));
