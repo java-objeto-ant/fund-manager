@@ -215,11 +215,11 @@ public class Panalo {
         p_oRecord.populate(loRS);
         MiscUtil.close(loRS);
         
-        p_nEditMode = EditMode.UNKNOWN;
+//        p_nEditMode = EditMode.READY;
         return true;
     }
     public boolean OpenRecord(String fsValue) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
+//        p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -359,10 +359,10 @@ public class Panalo {
     }
     
     public void setRedeem(int fnRow, int fnIndex, Object foValue) throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
-            System.out.println("Invalid Edit Mode Detected.");
-            return;
-        }
+//        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+//            System.out.println("Invalid Edit Mode Detected.");
+//            return;
+//        }
         p_oRedeem.absolute(fnRow);
         
         switch (fnIndex){
@@ -412,7 +412,7 @@ public class Panalo {
         }
         
         p_sMessage = "";    
-        String lsSQL = getSQ_Redeem()+ " AND a.sReferNox = " + SQLUtil.toSQL(fsTransNox);
+        String lsSQL = getSQ_Redeem()+ " WHERE a.sReferNox = " + SQLUtil.toSQL(fsTransNox);
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
         RowSetFactory factory = RowSetProvider.newFactory();
@@ -427,7 +427,7 @@ public class Panalo {
         p_oRedeem.populate(loRS);
         MiscUtil.close(loRS);
         
-        p_nEditMode = EditMode.UPDATE;
+        p_nEditMode = EditMode.READY;
         return true;
     }
     
