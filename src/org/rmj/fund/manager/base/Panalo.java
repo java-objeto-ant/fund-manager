@@ -4,15 +4,12 @@
  */
 package org.rmj.fund.manager.base;
 
-import com.sun.rowset.CachedRowSetImpl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
-import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
-import javax.sql.rowset.RowSetMetaDataImpl;
 import javax.sql.rowset.RowSetProvider;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
@@ -20,7 +17,6 @@ import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
@@ -455,7 +451,6 @@ public class Panalo {
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
     }
-//    
     
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
         int lnIndex = 0;
@@ -588,61 +583,61 @@ public class Panalo {
 //    }
     private String getSQ_Record(){
         return "SELECT" +
-                    "  IFNULL(a.sTransNox,'') sTransNox" +
-                    ", IFNULL(a.dTransact,'') dTransact" +	
-                    ", IFNULL(a.sPanaloCD,'') sPanaloCD" +
-                    ", IFNULL(c.sAcctNmbr,'') sAcctNmbr" +
-                    ", IFNULL(a.sSourceCD,'') sSourceCD" +	
-                    ", IFNULL(a.sSourceNo,'') sSourceNo" +
-                    ", IFNULL(a.nAmountxx,0) nAmountxx" +
-                    ", IFNULL(d.sPartsIDx,'') sItemCode" +	
-                    ", IFNULL(a.nItemQtyx,0) nItemQtyx" +
-                    ", IFNULL(a.nRedeemxx,0) nRedeemxx" +
-                    ", IFNULL(a.dExpiryDt,'') dExpiryDt" +	
-                    ", IFNULL(b.sClientID,'') sUserIDxx" +
-                    ",  IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sUserName " +
-                    ", IFNULL(a.dRedeemxx,'') dRedeemxx" +
-                    ", IFNULL(a.sDeviceID,'') sDeviceID" +	
-                    ", IFNULL(a.sReleased,'') sReleased" +
-                    ", IFNULL(a.cTranStat,'') cTranStat" +
-                    ", IFNULL(a.sModified,'') sModified" +	
-                    ", IFNULL(a.dModified,'') dModified" +
+                    "  a.sTransNox sTransNox" +
+                    ", a.dTransact dTransact" +	
+                    ", a.sPanaloCD sPanaloCD" +
+                    ", IFNULL(c.sAcctNmbr, '') sAcctNmbr" +
+                    ", a.sSourceCD sSourceCD" +	
+                    ", a.sSourceNo sSourceNo" +
+                    ", IFNULL(a.nAmountxx, 0.00) nAmountxx" +
+                    ", IFNULL(d.sPartsIDx, '') sItemCode" +	
+                    ", IFNULL(a.nItemQtyx, 0) nItemQtyx" +
+                    ", IFNULL(a.nRedeemxx, 0) nRedeemxx" +
+                    ", IFNULL(a.dExpiryDt, '') dExpiryDt" +	
+                    ", IFNULL(b.sClientID, '') sUserIDxx" +
+                    ", IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sUserName " +
+                    ", IFNULL(a.dRedeemxx, '') dRedeemxx" +
+                    ", IFNULL(a.sDeviceID, '') sDeviceID" +	
+                    ", IFNULL(a.sReleased, '') sReleased" +
+                    ", a.cTranStat cTranStat" +
+                    ", a.sModified sModified" +	
+                    ", a.dModified dModified" +
                     ", IFNULL(d.sDescript,'') sDescript" +
                     ", IFNULL(e.sPanaloDs,'') sPanaloDs" +
                 " FROM " + MASTER_TABLE + " a " +
-                "   LEFT JOIN Client_Master b " + 
-                "       ON a.sUserIDxx = b.sClientID "+
-                "   LEFT JOIN MC_AR_Master c " + 
-                "       ON a.sAcctNmbr = c.sAcctNmbr "+
-                "   LEFT JOIN Spareparts d " + 
-                "       ON a.sItemCode = d.sPartsIDx "+
-                "   LEFT JOIN Panalo_Info e " + 
-                "       ON a.sPanaloCD = e.sPanaloCD ";
+                    " LEFT JOIN Client_Master b " + 
+                        " ON a.sUserIDxx = b.sClientID "+
+                    " LEFT JOIN MC_AR_Master c " + 
+                        " ON a.sAcctNmbr = c.sAcctNmbr "+
+                    " LEFT JOIN Spareparts d " + 
+                        " ON a.sItemCode = d.sPartsIDx "+
+                    " LEFT JOIN Panalo_Info e " + 
+                        " ON a.sPanaloCD = e.sPanaloCD ";
     }
     public String getSQ_Redeem(){
-        String lsSQL = "";
+        String lsSQL;
         
         lsSQL = "SELECT " +
-                 "  IFNULL(a.sTransNox,'') sTransNox" +
-                    ", IFNULL(a.dRedeemxx,'') dRedeemxx" +	
-                    ", IFNULL(a.sDeviceID,'') sDeviceID" +
-                    ", IFNULL(c.sPartsIDx,'') sItemCode" +	
-                    ", IFNULL(a.nItemQtyx,0) nItemQtyx" +
-                    ", IFNULL(a.sRemarksx,'') sRemarksx" +
-                    ", IFNULL(b.sClientID,'') sUserIDxx" +
-                    ", IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sUserName " +
+                    "  a.sTransNox sTransNox" +
+                    ", a.dRedeemxx dRedeemxx" +	
+                    ", a.sDeviceID sDeviceID" +
+                    ", IFNULL(c.sPartsIDx, '') sItemCode" +	
+                    ", IFNULL(a.nItemQtyx, 0) nItemQtyx" +
+                    ", IFNULL(a.sRemarksx, '') sRemarksx" +
+                    ", IFNULL(b.sClientID, '') sUserIDxx" +
+                    ", CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sUserName " +
                     ", IFNULL(a.sApproved,'') sApproved" +
-                    ", IFNULL(a.dApproved,'') dApproved" +	
-                    ", IFNULL(a.cSendStat,'') cSendStat" +
-                    ", IFNULL(a.cTranStat,'') cTranStat" +
-                    ", IFNULL(a.sModified,'') sModified" +	
-                    ", IFNULL(a.dModified,'') dModified" +
-                    ", IFNULL(c.sDescript,'') sDescript" +
-                "  FROM " + REDEEM_TABLE + " a " +
-                "   LEFT JOIN Client_Master b " + 
-                "       ON a.sUserIDxx = b.sClientID "+
-                "   LEFT JOIN Spareparts c " + 
-                "       ON a.sItemCode = c.sPartsIDx ";
+                    ", IFNULL(a.dApproved, '') dApproved" +	
+                    ", a.cSendStat cSendStat" +
+                    ", a.cTranStat cTranStat" +
+                    ", a.sModifiedsModified" +	
+                    ", a.dModified dModified" +
+                    ", IFNULL(c.sDescript, '') sDescript" +
+                " FROM " + REDEEM_TABLE + " a " +
+                    " LEFT JOIN Client_Master b " + 
+                        " ON a.sUserIDxx = b.sClientID "+
+                    " LEFT JOIN Spareparts c " + 
+                        " ON a.sItemCode = c.sPartsIDx ";
         return lsSQL;
     }
     
