@@ -387,7 +387,7 @@ public class Incentive {
             }
         }        
         
-        String lsSQL = getSQ_Master();
+        String lsSQL = getSQ_Master() + " AND  LEFT(a.sTransNox, 4) = " +SQLUtil.toSQL(p_oApp.getBranchCode());
         String lsCondition = "";
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
@@ -398,7 +398,7 @@ public class Incentive {
             if (!p_oApp.isMainOffice()) lsCondition = "a.sTransNox LIKE " + SQLUtil.toSQL(p_oApp.getBranchCode() + "%");
         }
         if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
-        
+        System.out.println(lsSQL);
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                 p_oApp, 
