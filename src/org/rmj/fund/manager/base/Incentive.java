@@ -220,7 +220,7 @@ public class Incentive {
                     p_oDedctn.updateObject("sTransNox", lsTransNox);
                     p_oDedctn.updateRow();
 
-                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn, "Incentive_Detail_Ded_Allocation", "");
+                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn, "Incentive_Detail_Ded_Allocation", "xNewValue");
                     
                     if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                         if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -326,26 +326,42 @@ public class Incentive {
             if (getDeductionCount() > 0){
                 p_oDedctn.beforeFirst();
                 while (p_oDedctn.next()){
-                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn, 
-                                                "Incentive_Detail_Ded_Allocation", 
-                                                "",
-                                                "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
-                                                    " AND nEntryNox = " + p_oDedctn.getInt("nEntryNox"));
-                    
-                    if (!lsSQL.isEmpty()){
+                    if(p_oDedctn.getString("xNewValue").equalsIgnoreCase("0")){
+                        p_oDedctn.updateObject("sTransNox", lsTransNox);
+                        p_oDedctn.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(p_oDedctn, "Incentive_Detail_Ded_Allocation", "xNewValue");
+
                         if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                             if (!p_bWithParent) p_oApp.rollbackTrans();
                             p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
                             return false;
                         }
+                        
+                    }else{
+                        lsSQL = MiscUtil.rowset2SQL(p_oDedctn, 
+                                                "Incentive_Detail_Ded_Allocation", 
+                                                "xNewValue",
+                                                "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
+                                                    " AND nEntryNox = " + p_oDedctn.getInt("nEntryNox"));
+                    
+                        if (!lsSQL.isEmpty()){
+                            if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (!p_bWithParent) p_oApp.rollbackTrans();
+                                p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                                return false;
+                            }
+                        }
+                        
                     }
+                    
                 }
                 
                 p_oDedctn_Emp.beforeFirst();
                 while (p_oDedctn_Emp.next()){
                     lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, 
                                                 "Incentive_Detail_Ded_Allocation_Employee", 
-                                                "xEmployNm",
+                                                "xEmployNm;nTotalAmt",
                                                 "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
                                                     " AND nEntryNox = " + p_oDedctn_Emp.getInt("nEntryNox") +
                                                     " AND sEmployID = " + SQLUtil.toSQL(p_oDedctn_Emp.getString("sEmployID")));
@@ -637,16 +653,16 @@ public class Incentive {
             return false;
         }
         
-        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){
-            if (!p_oApp.getDepartment().equals(AUDITOR)){
-                System.out.println(p_oApp.getDepartment());
-                System.out.println("Master Dept = " + getMaster("sDeptIDxx"));
-                if (!p_oApp.getDepartment().equals((String) getMaster("sDeptIDxx"))){
-                    p_sMessage = "Unable to update other department transactions.";
-                    return false;
-                }
-            }
-        }
+//        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){
+//            if (!p_oApp.getDepartment().equals(AUDITOR)){
+//                System.out.println(p_oApp.getDepartment());
+//                System.out.println("Master Dept = " + getMaster("sDeptIDxx"));
+//                if (!p_oApp.getDepartment().equals((String) getMaster("sDeptIDxx"))){
+//                    p_sMessage = "Unable to update other department transactions.";
+//                    return false;
+//                }
+//            }
+//        }
         
         p_nEditMode = EditMode.UPDATE;
         return true;
@@ -1961,9 +1977,12 @@ public class Incentive {
     }
     
     public boolean addDeduction(String fsRemarksx) throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW) {
-            p_sMessage = "This feature was only for new entries.";
-            return false;
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            if (!p_oApp.getDepartment().equals(AUDITOR)){
+                p_sMessage = "This feature was only for new entries.";
+                return false;
+            
+            }
         }
         
         fsRemarksx = fsRemarksx.trim().toUpperCase();
@@ -1986,6 +2005,7 @@ public class Incentive {
         MiscUtil.initRowSet(p_oDedctn);     
         p_oDedctn.updateObject("nEntryNox", lnRox + 1);
         p_oDedctn.updateObject("sRemarksx", fsRemarksx);
+        p_oDedctn.updateObject("xNewValue", "0");
         p_oDedctn.updateObject("nDedctAmt", EncryptAmount(0.00));
         p_oDedctn.insertRow();
         p_oDedctn.moveToCurrentRow();
@@ -2620,6 +2640,7 @@ public class Incentive {
                     ", nEntryNox" +
                     ", sRemarksx" +
                     ", nDedctAmt" +
+                    ", '1' xNewValue" +
                 " FROM Incentive_Detail_Ded_Allocation";
     }
     
