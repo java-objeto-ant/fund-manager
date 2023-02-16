@@ -234,7 +234,7 @@ public class Incentive {
                     p_oDedctn_Emp.updateObject("sTransNox", lsTransNox);
                     p_oDedctn_Emp.updateRow();
 
-                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, "Incentive_Detail_Ded_Allocation_Employee", "xEmployNm;nTotalAmt");
+                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, "Incentive_Detail_Ded_Allocation_Employee", "xEmployNm;nTotalAmt;nNewValue");
                     
                     if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation_Employee", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                         if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -359,20 +359,34 @@ public class Incentive {
                 
                 p_oDedctn_Emp.beforeFirst();
                 while (p_oDedctn_Emp.next()){
-                    lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, 
-                                                "Incentive_Detail_Ded_Allocation_Employee", 
-                                                "xEmployNm;nTotalAmt",
-                                                "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
-                                                    " AND nEntryNox = " + p_oDedctn_Emp.getInt("nEntryNox") +
-                                                    " AND sEmployID = " + SQLUtil.toSQL(p_oDedctn_Emp.getString("sEmployID")));
-                    
-                    if (!lsSQL.isEmpty()){
+                    if(p_oDedctn_Emp.getString("nNewValue").equalsIgnoreCase("0")){
+                        p_oDedctn_Emp.updateObject("sTransNox", lsTransNox);
+                        p_oDedctn_Emp.updateRow();
+
+                        lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, "Incentive_Detail_Ded_Allocation_Employee", "xEmployNm;nTotalAmt;nNewValue");
+
                         if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation_Employee", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                             if (!p_bWithParent) p_oApp.rollbackTrans();
                             p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
                             return false;
                         }
-                    }                    
+                        
+                    }else{
+                        lsSQL = MiscUtil.rowset2SQL(p_oDedctn_Emp, 
+                                                    "Incentive_Detail_Ded_Allocation_Employee", 
+                                                    "xEmployNm;nTotalAmt;nNewValue",
+                                                    "sTransNox = " + SQLUtil.toSQL(lsTransNox) +
+                                                        " AND nEntryNox = " + p_oDedctn_Emp.getInt("nEntryNox") +
+                                                        " AND sEmployID = " + SQLUtil.toSQL(p_oDedctn_Emp.getString("sEmployID")));
+
+                        if (!lsSQL.isEmpty()){
+                            if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation_Employee", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                                if (!p_bWithParent) p_oApp.rollbackTrans();
+                                p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                                return false;
+                            }
+                        }  
+                    }
                 }
             }
             
@@ -517,6 +531,7 @@ public class Incentive {
         
         //open deductions employee alloction
         lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction_Emp(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDedctn_Emp = factory.createCachedRowSet();
         p_oDedctn_Emp.populate(loRS);
@@ -1424,11 +1439,15 @@ public class Incentive {
     }  
     
     public boolean removeDeduction(int fnEntryNox) throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW) {
-            p_sMessage = "This feature was only for new entries.";
-            return false;
+         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            if (!p_oApp.getDepartment().equals(AUDITOR)){
+                p_sMessage = "This feature was only for new entries.";
+                return false;
+            
+            }
         }
-
+        
+        
         int lnCtr;
         int lnRow = getDeductionCount();
         
@@ -2021,6 +2040,7 @@ public class Incentive {
             p_oDedctn_Emp.updateObject("sEmployID", (String) getDetail(lnCtr, "sEmployID"));
             p_oDedctn_Emp.updateObject("nEntryNox", lnRox + 1);
             p_oDedctn_Emp.updateString("nAllcAmtx", EncryptAmount(0.00));
+            p_oDedctn_Emp.updateObject("nNewValue", "0");
             p_oDedctn_Emp.updateString("xEmployNm", (String) getDetail(lnCtr, "xEmployNm"));
             p_oDedctn_Emp.insertRow();
             p_oDedctn_Emp.moveToCurrentRow();
@@ -2072,7 +2092,7 @@ public class Incentive {
     private void createDetailDeductionAlloc() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(4);
+        meta.setColumnCount(5);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -2093,6 +2113,11 @@ public class Incentive {
         meta.setColumnType(4, Types.VARCHAR);
         meta.setColumnDisplaySize(4, 32);
         
+        meta.setColumnName(5, "xNewValue");
+        meta.setColumnLabel(5, "xNewValue");
+        meta.setColumnType(5, Types.VARCHAR);
+        meta.setColumnDisplaySize(5, 1);
+        
         p_oDedctn = new CachedRowSetImpl();
         p_oDedctn.setMetaData(meta);
     }
@@ -2100,7 +2125,7 @@ public class Incentive {
     private void createDetailAllocationEmp() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(8);
+        meta.setColumnCount(9);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -2136,7 +2161,13 @@ public class Incentive {
         
         meta.setColumnName(8, "nTotalAmt");
         meta.setColumnLabel(8, "nTotalAmt");
-        meta.setColumnType(8, Types.DOUBLE);
+        meta.setColumnType(8, Types.DOUBLE);      
+        
+        meta.setColumnName(9, "nNewValue");
+        meta.setColumnLabel(9, "nNewValue");
+        meta.setColumnType(9, Types.VARCHAR);
+        meta.setColumnDisplaySize(9, 1);
+        
         
         p_oAllctn_Emp = new CachedRowSetImpl();
         p_oAllctn_Emp.setMetaData(meta);
@@ -2646,12 +2677,13 @@ public class Incentive {
     
     private String getSQ_Detail_Deduction_Emp(){
         return "SELECT" +
-                    "  a.sTransNox" +
-                    ", a.nEntryNox" +
-                    ", a.sEmployID" +
-                    ", a.nAllcPerc" +
-                    ", a.nAllcAmtx" +
+                    "  IFNULL(a.sTransNox, '') sTransNox" +
+                    ", IFNULL(a.nEntryNox, '') nEntryNox" +
+                    ", IFNULL(a.sEmployID, '') sEmployID" +
+                    ", IFNULL(a.nAllcPerc, 0) nAllcPerc" +
+                    ", IFNULL(a.nAllcAmtx, 0) nAllcAmtx" +
                     ", IFNULL(b.sCompnyNm, '') xEmployNm" +
+                    ", '1' nNewValue" +
                     ", 0.00 nTotalAmt" +
                 " FROM Incentive_Detail_Ded_Allocation_Employee a" +
                     " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID";
