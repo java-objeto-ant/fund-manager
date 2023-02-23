@@ -19,6 +19,7 @@ import javax.sql.rowset.RowSetProvider;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
+
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
@@ -33,7 +34,7 @@ import org.rmj.fund.manager.parameters.IncentiveBankInfo;
  *
  * @author User
  */
-public class IncentiveReports {
+public class IncentiveReportss {
     private final String FINANCE = "028";
     private final String AUDITOR = "034";
     private final String COLLECTION = "022";
@@ -63,6 +64,7 @@ public class IncentiveReports {
     private CachedRowSet p_oDetailVal;
     private CachedRowSet p_oDetailEmp;
     private CachedRowSet p_oDetailCateg;
+    private CachedRowSet p_oDtailCateg;
     private CachedRowSet p_oAllctn;
     private CachedRowSet p_oAllctn_Emp;
     private CachedRowSet p_oDedctn;
@@ -71,7 +73,7 @@ public class IncentiveReports {
     
     private LMasDetTrans p_oListener;
    
-    public IncentiveReports(GRider foApp, String fsBranchCd, boolean fbWithParent){        
+    public IncentiveReportss(GRider foApp, String fsBranchCd, boolean fbWithParent){        
         p_oApp = foApp;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;        
@@ -230,17 +232,71 @@ public class IncentiveReports {
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
-        lsCondition = lsCondition;
+//        lsCondition = lsCondition;
         
-        lsSQL = getSQ_EmployeeDetail() + lsCondition;
+        lsSQL = getSQ_EmployeeDetail() + lsCondition + " GROUP BY  c.sEmployID";
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailCateg = factory.createCachedRowSet();
         p_oDetailCateg.populate(loRS);
         MiscUtil.close(loRS);
-        computeEmpTotalIncentivesAmount();
+//        computeEmpTotalIncentivesAmount();
+        computeEmpTotalIncentivesAmounts();
         p_nEditMode = EditMode.READY;
         return true;
+    }
+    
+    private void computeEmpTotalIncentivesAmounts() throws SQLException{
+        
+        double lnPercentx,  lnIncentve, lnDeductnx;   
+        String[] arrXInctvPrc;
+        String[] arrXInctvAmt;
+        String[] arrXIncentve;
+        String[] arrSInctveCD;
+        double lnInctvAmt;
+        int lnCtr;
+         for (lnCtr = 1; lnCtr <= getCategoryCount(); lnCtr++){
+            p_oDetailCateg.absolute(lnCtr);
+            lnIncentve = 0.0;
+            lnPercentx = 0.0;
+            lnInctvAmt = 0.00;
+            arrSInctveCD = p_oDetailCateg.getString("sInctveCD").split("/");
+            System.out.println("xEmployNm = " + p_oDetailCateg.getString("xEmployNm"));
+            for(int lnctr = 0; lnctr < arrSInctveCD.length; lnctr++){
+                arrXInctvPrc = p_oDetailCateg.getString("xInctvPrc").split("/");
+                arrXInctvAmt = p_oDetailCateg.getString("xInctvAmt").split("/");
+                arrXIncentve = p_oDetailCateg.getString("xIncentve").split("/");
+                
+                if (Double.parseDouble(arrXInctvPrc[lnctr]) > 0.00){
+                    lnInctvAmt = DecryptAmount(arrXInctvAmt[lnctr]);
+                    lnInctvAmt = lnInctvAmt * Double.parseDouble(arrXInctvPrc[0]) / 100;
+
+                }else{
+                    lnInctvAmt = DecryptAmount(arrXIncentve[lnctr]);
+                }
+                if(arrSInctveCD[lnctr].equalsIgnoreCase("001")){
+                    p_oDetailCateg.updateString("nMcSalesx", EncryptAmount(lnInctvAmt)); 
+                    System.out.println("nMcSalesx = " + lnInctvAmt);
+                }else if(arrSInctveCD[lnctr].equalsIgnoreCase("002")){
+                    p_oDetailCateg.updateString("nSpareprt", EncryptAmount(lnInctvAmt));
+                    System.out.println("nSpareprt = " + lnInctvAmt);
+                }else if(arrSInctveCD[lnctr].equalsIgnoreCase("003")){
+                    p_oDetailCateg.updateString("nServicex", EncryptAmount(lnInctvAmt));
+                    System.out.println("nServicex = " + lnInctvAmt);
+                }else if(arrSInctveCD[lnctr].equalsIgnoreCase("004")){
+                    p_oDetailCateg.updateString("nRegisTri", EncryptAmount(lnInctvAmt));
+                    System.out.println("nRegisTri = " + lnInctvAmt);
+                }else if(arrSInctveCD[lnctr].equalsIgnoreCase("005")){
+                    p_oDetailCateg.updateString("nDei2xxxx", EncryptAmount(lnInctvAmt));
+                    System.out.println("nDei2xxxx = " + lnInctvAmt);
+                }
+                p_oDetailCateg.updateRow();
+                
+            }
+           
+           
+        
+         }
     }
     
     public boolean OpenTransactionMaster(String fsValue) throws SQLException{
@@ -409,7 +465,6 @@ public class IncentiveReports {
         p_oDetailCateg.last();
         return p_oDetailCateg.getRow();
     }
-    
     public int getIncentiveCount() throws SQLException{
         p_oAllctn.last();
         return p_oAllctn.getRow();
@@ -811,12 +866,17 @@ public class IncentiveReports {
         switch (fnIndex){
             case 6://xIncentive
             case 8://xInctvAmt
-//                if(p_oDetailCateg.getString(fnIndex).equalsIgnoreCase("0.0")){
-//                    return p_oDetailCateg.getObject(fnIndex);
-//                }else{
-//                    return DecryptAmount(p_oDetailCateg.getString(fnIndex));
-//                }
-                return DecryptAmount(p_oDetailCateg.getString(fnIndex));
+            case 11://xInctvAmt
+            case 12://xInctvAmt
+            case 13://xInctvAmt
+            case 14://xInctvAmt
+            case 15://xInctvAmt
+                if(p_oDetailCateg.getString(fnIndex).equalsIgnoreCase("0.0")){
+                    return p_oDetailCateg.getObject(fnIndex);
+                }else{
+                    return DecryptAmount(p_oDetailCateg.getString(fnIndex));
+                }
+//                return DecryptAmount(p_oDetailCateg.getString(fnIndex));
             default:
                 return p_oDetailCateg.getObject(fnIndex);
         }
@@ -824,6 +884,7 @@ public class IncentiveReports {
     public Object getDetailCategory(int fnRow, String fsIndex) throws SQLException{
         return getDetailCategory(fnRow, getColumnIndex(p_oDetailCateg, fsIndex));
     }
+    
     public int getItemMasterCount() throws SQLException{
         p_oMaster.last();
         return p_oMaster.getRow();
@@ -1916,7 +1977,7 @@ public class IncentiveReports {
     private void createDetailCategory() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(17);
+        meta.setColumnCount(16);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -1961,9 +2022,34 @@ public class IncentiveReports {
         meta.setColumnLabel(10, "sMonthxxx");
         meta.setColumnType(10, Types.VARCHAR);
         
-        meta.setColumnName(11, "xByPercnt");
-        meta.setColumnLabel(11, "xByPercnt");
+        meta.setColumnName(11, "nMcSalesx");
+        meta.setColumnLabel(11, "nMcSalesx");
         meta.setColumnType(11, Types.VARCHAR);
+        
+        meta.setColumnName(12, "nSpareprt");
+        meta.setColumnLabel(12, "nSpareprt");
+        meta.setColumnType(12, Types.VARCHAR);
+        meta.setColumnDisplaySize(12, 32);
+        
+        meta.setColumnName(13, "nServicex");
+        meta.setColumnLabel(13, "nServicex");
+        meta.setColumnType(13, Types.VARCHAR);
+        meta.setColumnDisplaySize(13, 32);
+        
+        meta.setColumnName(14, "nRegisTri");
+        meta.setColumnLabel(14, "nRegisTri");
+        meta.setColumnType(14, Types.VARCHAR);
+        meta.setColumnDisplaySize(14, 32);
+        
+        meta.setColumnName(15, "nDei2xxxx");
+        meta.setColumnLabel(15, "nDei2xxxx");
+        meta.setColumnType(15, Types.VARCHAR);
+        meta.setColumnDisplaySize(15, 32);
+        
+        meta.setColumnName(16, "sInctveCD");
+        meta.setColumnLabel(16, "sInctveCD");
+        meta.setColumnType(16, Types.VARCHAR);
+        meta.setColumnDisplaySize(16, 3);
         
         
         p_oDetailCateg = new CachedRowSetImpl();
@@ -2297,7 +2383,7 @@ public class IncentiveReports {
 //        return lsSQL;
 //    }
 //   
-    private String getSQ_EmployeeDetail(){
+     private String getSQ_EmployeeDetail(){
         String lsSQL = "";
         String lsStat = String.valueOf(p_nTranStat);
         
@@ -2310,38 +2396,106 @@ public class IncentiveReports {
         } else{            
             lsSQL = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
         }
-        lsSQL = "SELECT b.sTransNox, " +
+        lsSQL = "SELECT   b.sTransNox, " +
                 "  b.sEmployID, " +
-                "  IFNULL(i.sBranchNm,'') xBranchNm, " +
-                "  IFNULL(g.sCompnyNm,'') xEmployNm, " +
-                "  IFNULL(e.sInctveDs,'') sInctveDs,  " +
-                "  IFNULL(c.nAllcAmtx,'') xIncentve, " +
-                "  IFNULL(c.nAllcPerc,'') xInctvPrc, " +
-                "  IFNULL(d.nInctvAmt,'') xInctvAmt, " +
-                "  IFNULL(h.sPositnNm,'') xPositnNm,   " +
-                "  IFNULL(a.sMonthxxx,'') sMonthxxx, " +
-                "  e.cByPercnt xByPercnt " +
+                "  IFNULL(i.sBranchNm,'')    xBranchNm, " +
+                "  IFNULL(g.sCompnyNm,'')    xEmployNm, " +
+                "  IFNULL(e.sInctveDs,'')    sInctveDs, " +
+                "  GROUP_CONCAT(IFNULL(c.nAllcAmtx,'') SEPARATOR '/') xIncentve, " +
+                "  GROUP_CONCAT(IFNULL(c.nAllcPerc,'') SEPARATOR '/') xInctvPrc, " +
+                "  GROUP_CONCAT(IFNULL(d.nInctvAmt,'') SEPARATOR '/') xInctvAmt, " +
+                "  IFNULL(h.sPositnNm,'')    xPositnNm, " +
+                "  IFNULL(a.sMonthxxx,'')    sMonthxxx, " +
+                "  0.0 nMcSalesx, " +
+                "  0.0 nSpareprt, " +
+                "  0.0 nServicex, " +
+                "  0.0 nRegisTri, " +
+                "  0.0 nDei2xxxx, " +
+                "  GROUP_CONCAT(IFNULL(e.sInctveCD,'') SEPARATOR '/') sInctveCD " +
                 "FROM Incentive_Master a " +
                 "  LEFT JOIN Incentive_Detail b " +
                 "    ON a.sTransNox = b.sTransNox " +
                 "  LEFT JOIN Incentive_Detail_Allocation_Employee c " +
-                "    ON b.sTransNox = c.sTransNox AND b.sEmployID   = c.sEmployID  " +
+                "    ON b.sTransNox = c.sTransNox " +
+                "      AND b.sEmployID = c.sEmployID " +
                 "  LEFT JOIN Incentive_Detail_Allocation d " +
-                "    ON c.sTransNox = d.sTransNox AND c.sInctveCD = d.sInctveCD   " +
+                "    ON c.sTransNox = d.sTransNox " +
+                "      AND c.sInctveCD = d.sInctveCD " +
                 "  LEFT JOIN Incentive e " +
                 "    ON c.sInctveCD = e.sInctveCD " +
                 "  LEFT JOIN Employee_Master001 f " +
-                "    ON b.sEmployID = f.sEmployID  " +
+                "    ON b.sEmployID = f.sEmployID " +
                 "  LEFT JOIN Client_Master g " +
-                "    ON f.sEmployID   = g.sClientID  " +
+                "    ON f.sEmployID = g.sClientID " +
                 "  LEFT JOIN `Position` h " +
-                "    ON f.sPositnID   = h.sPositnID  " +
+                "    ON f.sPositnID = h.sPositnID " +
                 "  LEFT JOIN Branch i " +
                 "    ON f.sBranchCd = i.sBranchCd  " +
                 "WHERE " + lsSQL;
         return lsSQL;
     }
-    
+//    private String getSQ_EmployeeDetail(){
+//        String lsSQL = "";
+//        String lsStat = String.valueOf(p_nTranStat);
+//        
+//        if (lsStat.length() > 1){
+//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+//            }
+//            
+//            lsSQL = " a.cTranStat IN (" + lsSQL.substring(2) + ")";
+//        } else{            
+//            lsSQL = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
+//        }
+//        lsSQL = "SELECT " +
+//                "  b.sTransNox, " +
+//                "  b.sEmployID, " +
+//                "  IFNULL(i.sBranchNm,'')    xBranchNm, " +
+//                "  IFNULL(g.sCompnyNm,'')    xEmployNm, " +
+//                "  IFNULL(e.sInctveCD,'')    sInctveCD, " +
+////                "  IFNULL(e.sInctveDs,'')    sInctveDs, " +
+//                "  IFNULL(c.nAllcAmtx,'')    xIncentve, " +
+//                "  IFNULL(c.nAllcPerc,'')    xInctvPrc, " +
+//                "  IFNULL(d.nInctvAmt,'')    xInctvAmt, " +
+//                "  IFNULL(h.sPositnNm,'')    xPositnNm, " +
+//                "  IFNULL(a.sMonthxxx,'')    sMonthxxx, " +
+//                "  CASE WHEN c.sInctveCD = '001'  THEN c.nAllcAmtx " +
+//                "  ELSE 0.0  " +
+//                "  END AS nMcSalesx, " +
+//                "  CASE WHEN c.sInctveCD = '002'  THEN c.nAllcAmtx " +
+//                "  ELSE 0.0  " +
+//                "  END AS  nSpareprt, " +
+//                "  CASE WHEN c.sInctveCD = '003'  THEN c.nAllcAmtx " +
+//                "  ELSE 0.0  " +
+//                "  END AS nServicex, " +
+//                "  CASE WHEN c.sInctveCD = '004'  THEN c.nAllcAmtx " +
+//                "  ELSE 0.0  " +
+//                "  END AS nRegisTri, " +
+//                "  CASE WHEN c.sInctveCD = '005'  THEN c.nAllcAmtx " +
+//                "  ELSE 0.0  " +
+//                "  END AS nDei2xxxx " +
+//                "FROM Incentive_Master a " +
+//                "  LEFT JOIN Incentive_Detail b " +
+//                "    ON a.sTransNox = b.sTransNox " +
+//                "  LEFT JOIN Incentive_Detail_Allocation_Employee c " +
+//                "    ON b.sTransNox = c.sTransNox " +
+//                "      AND b.sEmployID = c.sEmployID " +
+//                "  LEFT JOIN Incentive_Detail_Allocation d " +
+//                "    ON c.sTransNox = d.sTransNox " +
+//                "      AND c.sInctveCD = d.sInctveCD " +
+//                "  LEFT JOIN Incentive e " +
+//                "    ON c.sInctveCD = e.sInctveCD " +
+//                "  LEFT JOIN Employee_Master001 f " +
+//                "    ON b.sEmployID = f.sEmployID " +
+//                "  LEFT JOIN Client_Master g " +
+//                "    ON f.sEmployID = g.sClientID " +
+//                "  LEFT JOIN `Position` h " +
+//                "    ON f.sPositnID = h.sPositnID " +
+//                "  LEFT JOIN Branch i " +
+//                "    ON f.sBranchCd = i.sBranchCd  " +
+//                "WHERE " + lsSQL;
+//        return lsSQL;
+//    }
     private String getSQ_MasterDetail(){
         return "SELECT" +
                     "  a.sTransNox" +
@@ -2364,6 +2518,7 @@ public class IncentiveReports {
     }
     
     private String getSQ_Detail_Allocation(){
+        
         return "SELECT" +
                     "  a.sTransNox" +
                     ", a.sInctveCD" +
@@ -2569,10 +2724,10 @@ public class IncentiveReports {
             
             }else{
                 lnInctvAmt = DecryptAmount(p_oDetailCateg.getString("xIncentve"));
-                System.out.println(p_oDetailCateg.getString("xEmployNm") + " = " + p_oDetailCateg.getString("xIncentve"));
+                System.out.println(p_oDetailCateg.getString("xEmployNm") + " = " + lnInctvAmt);
             }
-           
             p_oDetailCateg.updateString("xIncentve", EncryptAmount(lnInctvAmt));
+            
 //            p_oDetailCateg.updateString("xDeductnx", EncryptAmount(lnDeductnx));
 //            p_oDetailCateg.updateString("nTotalAmt", EncryptAmount(lnInctvAmt));
             p_oDetailCateg.updateRow();

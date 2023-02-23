@@ -31,6 +31,9 @@ import org.rmj.fund.manager.parameters.IncentiveBankInfo;
  */
 public class DeptIncentiveReport {
     private final String DEBUG_MODE = "app.debug.mode";
+    private final String REQUIRE_CSS = "app.require.css.approval";
+    private final String REQUIRE_CM = "app.require.cm.approval";
+    private final String REQUIRE_BANK_ON_APPROVAL = "app.require.bank.on.approval";
 
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -724,6 +727,13 @@ public class DeptIncentiveReport {
         
         return lnIndex;
     }
+//    private void loadConfig(){
+//        //update the value on configuration before deployment
+//        System.setProperty(DEBUG_MODE, "0"); 
+//        System.setProperty(REQUIRE_CSS, "0");
+//        System.setProperty(REQUIRE_CM, "1");
+//        System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
+//    }
     
     private void loadConfig(){
         if (p_oApp.getDepartment().equals("026"))

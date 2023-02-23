@@ -205,7 +205,7 @@ public class Incentive {
                 p_oAllctn_Emp.updateObject("sTransNox", lsTransNox);
                 p_oAllctn_Emp.updateRow();
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oAllctn_Emp, "Incentive_Detail_Allocation_Employee", "xEmployNm;xInctvNme;nTotalAmt");
+                lsSQL = MiscUtil.rowset2SQL(p_oAllctn_Emp, "Incentive_Detail_Allocation_Employee", "xEmployNm;xInctvNme;nTotalAmt;nNewValue");
                 
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Allocation_Employee", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
@@ -2052,7 +2052,7 @@ public class Incentive {
     private void createDetailDeductionAllocEmp() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(7);
+        meta.setColumnCount(8);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -2081,9 +2081,13 @@ public class Incentive {
         meta.setColumnLabel(6, "xEmployNm");
         meta.setColumnType(6, Types.VARCHAR);
         
-        meta.setColumnName(7, "nTotalAmt");
-        meta.setColumnLabel(7, "nTotalAmt");
-        meta.setColumnType(7, Types.DOUBLE);
+        meta.setColumnName(7, "nNewValue");
+        meta.setColumnLabel(7, "nNewValue");
+        meta.setColumnType(7, Types.VARCHAR);
+        
+        meta.setColumnName(8, "nTotalAmt");
+        meta.setColumnLabel(8, "nTotalAmt");
+        meta.setColumnType(8, Types.DOUBLE);
         
         p_oDedctn_Emp = new CachedRowSetImpl();
         p_oDedctn_Emp.setMetaData(meta);        

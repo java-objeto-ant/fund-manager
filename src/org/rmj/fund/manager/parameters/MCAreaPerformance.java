@@ -101,7 +101,7 @@ public class MCAreaPerformance {
         String lsSQL;
         
         if (p_nEditMode == EditMode.ADDNEW){                       
-            lsSQL = MiscUtil.rowset2SQL(p_oRecord, MASTER_TABLE, "xBranchNm");
+            lsSQL = MiscUtil.rowset2SQL(p_oRecord, MASTER_TABLE, "xBranchNm;xAreaDesc");
             
             if (!lsSQL.isEmpty()){
                 lsSQL += " ON DUPLICATE KEY UPDATE" +
@@ -114,7 +114,7 @@ public class MCAreaPerformance {
         } else {            
             lsSQL = MiscUtil.rowset2SQL(p_oRecord, 
                                         MASTER_TABLE, 
-                                        "xBranchNm", 
+                                        "xBranchNm;xAreaDesc", 
                                         "sAreaCode = " + SQLUtil.toSQL(p_oRecord.getString("sAreaCode")) +
                                         "AND sPeriodxx = " + SQLUtil.toSQL(p_oRecord.getString("sPeriodxx")));
         }
