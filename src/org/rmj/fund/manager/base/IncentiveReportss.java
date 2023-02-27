@@ -156,7 +156,6 @@ public class IncentiveReportss {
         
         lsCondition1 =  lsCondition1 + " GROUP BY b.sEmployID,a.sMonthxxx";
         lsSQL = getSQ_Detail() + lsCondition1 ;
-        System.out.println(" OPenEmployee = " + lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailVal = factory.createCachedRowSet();
         p_oDetailVal.populate(loRS);
@@ -198,7 +197,6 @@ public class IncentiveReportss {
                  }
              }
             
-            System.out.println(p_oDetailVal.getString("sEmployID") + " total = " + lnTotalAmt);
             p_oDetailVal.updateString("xIncentve", String.valueOf(lnTotalInc));
             p_oDetailVal.updateString("xDeductnx", String.valueOf(lnTotalDed));
             p_oDetailVal.updateString("nTotalAmt", EncryptAmount(lnTotalAmt));
@@ -235,11 +233,12 @@ public class IncentiveReportss {
 //        lsCondition = lsCondition;
         
         lsSQL = getSQ_EmployeeDetail() + lsCondition + " GROUP BY  c.sEmployID";
-        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailCateg = factory.createCachedRowSet();
         p_oDetailCateg.populate(loRS);
         MiscUtil.close(loRS);
+        
+
 //        computeEmpTotalIncentivesAmount();
         computeEmpTotalIncentivesAmounts();
         p_nEditMode = EditMode.READY;
@@ -247,21 +246,48 @@ public class IncentiveReportss {
     }
     
     private void computeEmpTotalIncentivesAmounts() throws SQLException{
+        int lnIncRow;
+        int lnAlcRow;
         
-        double lnPercentx,  lnIncentve, lnDeductnx;   
+        
+        double lnPercentx,  lnIncentve,lnAllcAmtx,lnTotalAmt,lnTotalDed,lnDeductnx; 
+                        
         String[] arrXInctvPrc;
         String[] arrXInctvAmt;
         String[] arrXIncentve;
         String[] arrSInctveCD;
         double lnInctvAmt;
-        int lnCtr;
+        int lnCtr,lnCtr2,lnCtr3;
+        
          for (lnCtr = 1; lnCtr <= getCategoryCount(); lnCtr++){
             p_oDetailCateg.absolute(lnCtr);
             lnIncentve = 0.0;
             lnPercentx = 0.0;
             lnInctvAmt = 0.00;
+            String lsSQL;
+            String lsCondition;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+            createDetailAllocation();
+            createDetailAllocationEmp();
+            createDetailDeductionAlloc();
+            createDetailDeductionAllocEmp();
+            
+            //open deductions
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction(), "sTransNox = " + SQLUtil.toSQL(p_oDetailCateg.getString("sTransNox")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oDedctn = factory.createCachedRowSet();
+            p_oDedctn.populate(loRS);
+            MiscUtil.close(loRS);
+
+            //open deductions employee alloction
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction_Emp(), "a.sTransNox = " + SQLUtil.toSQL(p_oDetailCateg.getString("sTransNox")) + "AND a.sEmployID = " + SQLUtil.toSQL(p_oDetailCateg.getString("sEmployID")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oDedctn_Emp = factory.createCachedRowSet();
+            p_oDedctn_Emp.populate(loRS);
+            MiscUtil.close(loRS);
+            
             arrSInctveCD = p_oDetailCateg.getString("sInctveCD").split("/");
-            System.out.println("xEmployNm = " + p_oDetailCateg.getString("xEmployNm"));
             for(int lnctr = 0; lnctr < arrSInctveCD.length; lnctr++){
                 arrXInctvPrc = p_oDetailCateg.getString("xInctvPrc").split("/");
                 arrXInctvAmt = p_oDetailCateg.getString("xInctvAmt").split("/");
@@ -276,23 +302,58 @@ public class IncentiveReportss {
                 }
                 if(arrSInctveCD[lnctr].equalsIgnoreCase("001")){
                     p_oDetailCateg.updateString("nMcSalesx", EncryptAmount(lnInctvAmt)); 
-                    System.out.println("nMcSalesx = " + lnInctvAmt);
                 }else if(arrSInctveCD[lnctr].equalsIgnoreCase("002")){
                     p_oDetailCateg.updateString("nSpareprt", EncryptAmount(lnInctvAmt));
-                    System.out.println("nSpareprt = " + lnInctvAmt);
                 }else if(arrSInctveCD[lnctr].equalsIgnoreCase("003")){
                     p_oDetailCateg.updateString("nServicex", EncryptAmount(lnInctvAmt));
-                    System.out.println("nServicex = " + lnInctvAmt);
                 }else if(arrSInctveCD[lnctr].equalsIgnoreCase("004")){
                     p_oDetailCateg.updateString("nRegisTri", EncryptAmount(lnInctvAmt));
-                    System.out.println("nRegisTri = " + lnInctvAmt);
                 }else if(arrSInctveCD[lnctr].equalsIgnoreCase("005")){
                     p_oDetailCateg.updateString("nDei2xxxx", EncryptAmount(lnInctvAmt));
-                    System.out.println("nDei2xxxx = " + lnInctvAmt);
                 }
                 p_oDetailCateg.updateRow();
                 
             }
+          //deductions
+          
+            lnAllcAmtx = 0.0;
+            lnTotalDed = 0.0;
+            lnTotalAmt = 0.00;
+            lnIncRow = getDeductionCount();
+            lnAlcRow = getDeductionEmployeeAllocationCount();
+            for (lnCtr2 = 1; lnCtr2 <= lnIncRow; lnCtr2++){
+                p_oDedctn.absolute(lnCtr2);
+                
+                lnAllcAmtx = getAllocatedDeduction(lnCtr2, "2");
+                
+                for (lnCtr3 = 1; lnCtr3 <= lnAlcRow; lnCtr3++){
+                    p_oDedctn_Emp.absolute(lnCtr3);
+                    
+                    lnDeductnx = 0.00;
+                    if (p_oDedctn.getInt("nEntryNox") == p_oDedctn_Emp.getInt("nEntryNox") &&
+                        p_oDetailCateg.getString("sEmployID").equals(p_oDedctn_Emp.getString("sEmployID"))){
+                        
+                        lnDeductnx = DecryptAmount(p_oDedctn_Emp.getString("nAllcAmtx"));
+
+                        lnPercentx = p_oDedctn_Emp.getDouble("nAllcPerc") / 100;
+                        lnPercentx = lnPercentx * (DecryptAmount(p_oDedctn.getString("nDedctAmt")) - lnAllcAmtx);
+
+                        lnDeductnx += lnPercentx * 100 / 100;
+                        
+                        lnTotalAmt -= lnDeductnx;
+                        lnTotalAmt = lnTotalAmt * 100 / 100; //round off
+                        
+                        p_oDedctn_Emp.updateObject("nTotalAmt", lnDeductnx);
+                        p_oDedctn_Emp.updateRow();
+                        
+                        lnTotalDed += lnDeductnx;
+                        break;
+                    } 
+                }
+            }
+            
+            p_oDetailCateg.updateString("xDeductnx", String.valueOf(lnTotalDed));
+            p_oDetailCateg.updateRow();
            
            
         
@@ -337,11 +398,221 @@ public class IncentiveReportss {
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
         MiscUtil.close(loRS);
-        computeEmpTotalIncentiveAmountMaster() ;
+//        computeEmpTotalIncentiveAmountMaster() ;
+        computeSmmaryIncentiveAmountMaster();
         p_nEditMode = EditMode.READY;
         return true;
     }
-    
+    private void computeSmmaryIncentiveAmountMaster() throws SQLException{
+        int lnCtr4;    
+        for(lnCtr4 = 1; lnCtr4 <= getItemMasterCount(); lnCtr4++){
+            
+            p_oMaster.absolute(lnCtr4);
+             
+            String lsSQL;
+            ResultSet loRS;
+            RowSetFactory factory = RowSetProvider.newFactory();
+        
+        
+//        
+//            //open detail
+            lsSQL = MiscUtil.addCondition(getSQ_MasterDetail(), "a.sTransNox = " + SQLUtil.toSQL(p_oMaster.getString("sTransNox")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oDetail = factory.createCachedRowSet();
+            p_oDetail.populate(loRS);
+            MiscUtil.close(loRS);
+            //open incentive
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Allocation(), "a.sTransNox = " + SQLUtil.toSQL(p_oMaster.getString("sTransNox")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oAllctn = factory.createCachedRowSet();
+            p_oAllctn.populate(loRS);
+            MiscUtil.close(loRS);
+
+            //open incentive employee allocation
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Allocation_Emp(), "a.sTransNox = " + SQLUtil.toSQL(p_oMaster.getString("sTransNox")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oAllctn_Emp = factory.createCachedRowSet();
+            p_oAllctn_Emp.populate(loRS);
+            MiscUtil.close(loRS);
+
+            //open deductions
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction(), "sTransNox = " + SQLUtil.toSQL(p_oMaster.getString("sTransNox")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oDedctn = factory.createCachedRowSet();
+            p_oDedctn.populate(loRS);
+            MiscUtil.close(loRS);
+
+            //open deductions employee alloction
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction_Emp(), "a.sTransNox = " + SQLUtil.toSQL(p_oMaster.getString("sTransNox")));
+            loRS = p_oApp.executeQuery(lsSQL);
+            p_oDedctn_Emp = factory.createCachedRowSet();
+            p_oDedctn_Emp.populate(loRS);
+            MiscUtil.close(loRS);
+            int lnCtr1, lnCtr2, lnCtr3;
+            int lnDetRow = getItemCount();
+            int lnIncRow;
+            int lnAlcRow;
+            double lnTotalAmt, lnPercentx, lnAllcAmtx, lnIncentve, lnDeductnx;
+            double lnMCSalesx, lnSpareprt, lnServicex, lnRegistri, lnDEIxxxxx,lnXDeductnx;
+            double lnTotalInc, lnTotalDed;     
+            double transTotal = 0.0;  
+            double lnMCSalesTotal = 0.0;  
+            double lnSpareprtTotal = 0.0;  
+            double lnServicexTotal = 0.0;  
+            double lnRegistriTotal = 0.0;  
+            double lnDEIxxxxxTotal = 0.0;  
+            double lnXDeductnxTotal = 0.0;  
+            
+            for (lnCtr1 = 1; lnCtr1 <= lnDetRow; lnCtr1++){
+                p_oDetail.absolute(lnCtr1);
+                lnTotalInc = 0.00;
+                lnTotalDed = 0.00;
+                lnTotalAmt = 0.00;
+                lnMCSalesx = 0.00;
+                lnSpareprt = 0.00;
+                lnServicex = 0.00;
+                lnRegistri = 0.00; 
+                lnDEIxxxxx  = 0.00;
+
+                //incentive
+                lnIncRow = getIncentiveCount();
+                lnAlcRow = getIncentiveEmployeeAllocationCount();
+                for (lnCtr2 = 1; lnCtr2 <= lnIncRow; lnCtr2++){
+                    p_oAllctn.absolute(lnCtr2);
+
+                    if (p_oAllctn.getString("xByPercnt").equals("2"))
+                        lnAllcAmtx = getAllocatedIncentive(lnCtr2, "2");
+                    else
+                        lnAllcAmtx = 0.00;
+
+                    for (lnCtr3 = 1; lnCtr3 <= lnAlcRow; lnCtr3++){
+                        p_oAllctn_Emp.absolute(lnCtr3);
+
+                        lnIncentve = 0.00;
+                        if (p_oAllctn.getString("sInctveCD").equals(p_oAllctn_Emp.getString("sInctveCD")) &&
+                            getDetail(lnCtr1,"sEmployID").equals(p_oAllctn_Emp.getString("sEmployID"))){
+
+                            switch (p_oAllctn.getString("xByPercnt")){
+                                case "0":
+                                    lnIncentve = DecryptAmount(p_oAllctn_Emp.getString("nAllcAmtx"));
+
+                                    lnTotalAmt += lnIncentve;
+                                    lnTotalAmt = lnTotalAmt * 100 / 100; //round off
+                                    break;
+                                case "1":
+                                    lnPercentx = p_oAllctn_Emp.getDouble("nAllcPerc") / 100;
+                                    lnPercentx = lnPercentx * DecryptAmount(p_oAllctn.getString("nInctvAmt"));
+
+                                    lnIncentve = lnPercentx * 100 / 100;
+
+                                    lnTotalAmt += lnIncentve;
+                                    lnTotalAmt = lnTotalAmt * 100 / 100; //round off
+                                    break;
+                                case "2": 
+                                    lnIncentve = DecryptAmount(p_oAllctn_Emp.getString("nAllcAmtx"));
+
+                                    lnPercentx = p_oAllctn_Emp.getDouble("nAllcPerc") / 100;
+                                    lnPercentx = lnPercentx * (DecryptAmount(p_oAllctn.getString("nInctvAmt")) - lnAllcAmtx);
+
+                                    lnIncentve += lnPercentx * 100 / 100;
+
+                                    lnTotalAmt += lnIncentve;
+                                    lnTotalAmt = lnTotalAmt * 100 / 100; //round off
+                                    break;
+                            }      
+                            p_oAllctn_Emp.updateObject("nTotalAmt", lnIncentve);
+                            p_oAllctn_Emp.updateRow();
+
+                            lnTotalInc += lnIncentve;
+                            if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("001")){
+                                 lnMCSalesx += lnIncentve; 
+                                
+                            }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("002")){
+                                lnSpareprt += lnIncentve; 
+                                
+                            }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("003")){
+                                lnServicex += lnIncentve; 
+                            }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("004")){
+                                lnRegistri += lnIncentve; 
+                            }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("005")){
+                                lnDEIxxxxx += lnIncentve;
+                                
+                            }
+                        } 
+                    }
+                }
+
+                //deductions
+                lnIncRow = getDeductionCount();
+                lnAlcRow = getDeductionEmployeeAllocationCount();
+                for (lnCtr2 = 1; lnCtr2 <= lnIncRow; lnCtr2++){
+                    p_oDedctn.absolute(lnCtr2);
+
+                    lnAllcAmtx = getAllocatedDeduction(lnCtr2, "2");
+
+                    for (lnCtr3 = 1; lnCtr3 <= lnAlcRow; lnCtr3++){
+                        p_oDedctn_Emp.absolute(lnCtr3);
+
+                        lnDeductnx = 0.00;
+                        if (p_oDedctn.getInt("nEntryNox") == p_oDedctn_Emp.getInt("nEntryNox") &&
+                            p_oDetail.getString("sEmployID").equals(p_oDedctn_Emp.getString("sEmployID"))){
+
+                            lnDeductnx = DecryptAmount(p_oDedctn_Emp.getString("nAllcAmtx"));
+
+                            lnPercentx = p_oDedctn_Emp.getDouble("nAllcPerc") / 100;
+                            lnPercentx = lnPercentx * (DecryptAmount(p_oDedctn.getString("nDedctAmt")) - lnAllcAmtx);
+
+                            lnDeductnx += lnPercentx * 100 / 100;
+
+                            lnTotalAmt -= lnDeductnx;
+                            lnTotalAmt = lnTotalAmt * 100 / 100; //round off
+
+                            p_oDedctn_Emp.updateObject("nTotalAmt", lnDeductnx);
+                            p_oDedctn_Emp.updateRow();
+
+                            lnTotalDed += lnDeductnx;
+                            break;
+                        } 
+                    }
+                }
+            if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("001")){
+                p_oDetail.updateDouble("nMcSalesx", lnMCSalesx);
+           }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("002")){
+                p_oDetail.updateDouble("nSpareprt", lnSpareprt);
+           }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("003")){
+                p_oDetail.updateDouble("nServicex", lnServicex);
+           }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("004")){
+                p_oDetail.updateDouble("nRegisTri", lnRegistri);
+           }else if(p_oAllctn_Emp.getString("sInctveCD").equalsIgnoreCase("005")){
+                p_oDetail.updateDouble("nDei2xxxx", lnDEIxxxxx);
+           }
+            p_oDetail.updateDouble("xIncentve", lnTotalInc);
+            p_oDetail.updateDouble("xDeductnx", lnTotalDed);
+            p_oDetail.updateString("nTotalAmt", EncryptAmount(lnTotalInc - lnTotalDed));
+            transTotal = transTotal + (lnTotalInc - lnTotalDed);
+            
+            
+            lnMCSalesTotal = lnMCSalesTotal + lnMCSalesx;  
+            lnSpareprtTotal = lnSpareprtTotal + lnSpareprt;  
+            lnServicexTotal = lnServicexTotal + lnServicex;  
+            lnRegistriTotal = lnRegistriTotal + lnRegistri;  
+            lnDEIxxxxxTotal = lnDEIxxxxxTotal + lnDEIxxxxx;  
+            lnXDeductnxTotal = lnXDeductnxTotal + lnTotalDed;
+            
+          
+            }
+            p_oMaster.updateString("xTotalAmt", String.valueOf(transTotal));
+            p_oMaster.updateString("nMcSalesx", String.valueOf(lnMCSalesTotal));
+            p_oMaster.updateString("nSpareprt", String.valueOf(lnSpareprtTotal));
+            p_oMaster.updateString("nServicex", String.valueOf(lnServicexTotal));
+            p_oMaster.updateString("nRegisTri", String.valueOf(lnRegistriTotal));
+            p_oMaster.updateString("nDei2xxxx", String.valueOf(lnDEIxxxxxTotal));
+            p_oMaster.updateString("xDeductnx", String.valueOf(lnXDeductnxTotal));
+            p_oMaster.updateRow();
+        }
+        
+        
+    }
     public Double OpenToTalMaster(int fnRow,String fsTransNox) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
         
@@ -979,8 +1250,6 @@ public class IncentiveReportss {
                         fbByCode ? 0 : 1);
             
             if (loJSON != null){
-                System.out.println("sDeptIDxx = " +(String) loJSON.get("sDeptIDxx"));
-                System.out.println("sDeptName = " +(String) loJSON.get("sDeptName"));
                 p_oMaster.updateString("sDeptIDxx", (String) loJSON.get("sDeptIDxx"));
                 p_oMaster.updateString("xDeptName", (String) loJSON.get("sDeptName"));
                 p_oMaster.updateRow();
@@ -1159,8 +1428,6 @@ public class IncentiveReportss {
             double lnTotalInc, lnTotalDed;     
             double transTotal = 0.0;  
             
-            System.out.println("sTransNox = " + p_oMaster.getString("sTransNox"));
-            System.out.println();
             for (lnCtr1 = 1; lnCtr1 <= lnDetRow; lnCtr1++){
                 p_oDetail.absolute(lnCtr1);
                 lnTotalInc = 0.00;
@@ -1261,7 +1528,7 @@ public class IncentiveReportss {
             p_oDetail.updateString("nTotalAmt", EncryptAmount(lnTotalInc - lnTotalDed));
             transTotal = transTotal + (lnTotalInc - lnTotalDed);
             
-            System.out.println("xIncentve = " + lnTotalInc);
+          
             }
             p_oMaster.updateString("xTotalAmt", String.valueOf(transTotal));
             p_oMaster.updateRow();
@@ -1977,7 +2244,7 @@ public class IncentiveReportss {
     private void createDetailCategory() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(16);
+        meta.setColumnCount(17);
         
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -2050,6 +2317,11 @@ public class IncentiveReportss {
         meta.setColumnLabel(16, "sInctveCD");
         meta.setColumnType(16, Types.VARCHAR);
         meta.setColumnDisplaySize(16, 3);
+        
+        meta.setColumnName(17, "xDeductnx");
+        meta.setColumnLabel(17, "xDeductnx");
+        meta.setColumnType(17, Types.VARCHAR);
+        meta.setColumnDisplaySize(17, 32);
         
         
         p_oDetailCateg = new CachedRowSetImpl();
@@ -2274,7 +2546,13 @@ public class IncentiveReportss {
                     ", a.cTranStat" +
                     ", c.sBranchNm xBranchNm" +
                     ", IFNULL(b.sDeptName, '') xDeptName" +
-                    ", 0.0 xTotalAmt" +
+                    ", 0.0 xTotalAmt " +
+                    ",  0.0 nMcSalesx " +
+                    ",  0.0 nSpareprt " +
+                    ",  0.0 nServicex " +
+                    ",  0.0 nRegisTri " +
+                    ",  0.0 nDei2xxxx " +
+                    ",  0.0 xDeductnx " +
                 " FROM Incentive_Master a" +
                     " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                     ", Branch c " +
@@ -2411,6 +2689,7 @@ public class IncentiveReportss {
                 "  0.0 nServicex, " +
                 "  0.0 nRegisTri, " +
                 "  0.0 nDei2xxxx, " +
+                "  0.0 xDeductnx, " +
                 "  GROUP_CONCAT(IFNULL(e.sInctveCD,'') SEPARATOR '/') sInctveCD " +
                 "FROM Incentive_Master a " +
                 "  LEFT JOIN Incentive_Detail b " +
@@ -2508,6 +2787,11 @@ public class IncentiveReportss {
                     ", IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(b.dStartEmp, b.dHiredxxx)) / 365), '') xSrvcYear" +
                     ", 0.00 xIncentve" +
                     ", 0.00 xDeductnx" +
+                    ",  0.0 nMcSalesx " +
+                    ",  0.0 nSpareprt " +
+                    ",  0.0 nServicex " +
+                    ",  0.0 nRegisTri " +
+                    ",  0.0 nDei2xxxx " +
                 " FROM Incentive_Detail a" +
                     ", Employee_Master001 b" +
                         " LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID" +
@@ -2724,7 +3008,6 @@ public class IncentiveReportss {
             
             }else{
                 lnInctvAmt = DecryptAmount(p_oDetailCateg.getString("xIncentve"));
-                System.out.println(p_oDetailCateg.getString("xEmployNm") + " = " + lnInctvAmt);
             }
             p_oDetailCateg.updateString("xIncentve", EncryptAmount(lnInctvAmt));
             
