@@ -156,6 +156,7 @@ public class IncentiveReportss {
         
         lsCondition1 =  lsCondition1 + " GROUP BY b.sEmployID,a.sMonthxxx";
         lsSQL = getSQ_Detail() + lsCondition1 ;
+        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailVal = factory.createCachedRowSet();
         p_oDetailVal.populate(loRS);
@@ -221,18 +222,20 @@ public class IncentiveReportss {
         String lsCondition = "";
         String lsCondition1 = "";
         String lsCondition2 = "";
+        
+        if(p_oEmployee != null){
+            lsCondition = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
+        }
         if(p_oBranch != null){
-            lsCondition = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd")+ "%");
-        }else{
             lsCondition =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
         }
-        
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
 //        lsCondition = lsCondition;
         
         lsSQL = getSQ_EmployeeDetail() + lsCondition + " GROUP BY  c.sEmployID";
+        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailCateg = factory.createCachedRowSet();
         p_oDetailCateg.populate(loRS);
