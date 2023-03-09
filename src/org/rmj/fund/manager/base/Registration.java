@@ -707,6 +707,7 @@ public class Registration {
         p_oMaster.updateString("cCltCnfrm", RecordStatus.INACTIVE);
         p_oMaster.updateString("cSysCnfrm", RecordStatus.INACTIVE);
         p_oMaster.updateString("cRaffledx", RecordStatus.INACTIVE);
+        p_oDetail.updateObject("nEntryNox", 1);
         p_oMaster.updateString("sSourceCd", "ILMJ");
         
         p_oMaster.insertRow();
@@ -787,33 +788,58 @@ public class Registration {
     }
     private String getSQ_Record(){
         return "SELECT" +
-                    " IFNULL(a.sAttndIDx,'')  sAttndIDx" +
-                    ", IFNULL(a.sPrefixNm,'') sPrefixNm" +
-                    ", IFNULL(a.sLastName,'') sLastName" +
-                    ", IFNULL(a.sFirstNme,'') sFirstNme" +
-                    ", IFNULL(a.sMiddName,'') sMiddName" +
-                    ", IFNULL(a.sSuffixNm,'') sSuffixNm" +
-                    ", IFNULL(a.sAttendNm,'') sAttendNm" +
-                    ", IFNULL(a.sEmailAdd,'') sEmailAdd" +
-                    ", IFNULL(a.sCompnyID,'') sCompnyID" +
-                    ", IFNULL(b.sPositnID,'') sPositnID" +
-                    ", IFNULL(b.sPositnNm,'') sPositnNm" +
-                    ", IFNULL(a.cAttndTyp,'0') cAttndTyp" +
-                    ", IFNULL(a.cIsVIPxxx,'0') cIsVIPxxx" +
-                    ", IFNULL(c.cPresentx,'0') cPresentx" +
-                    ", IFNULL(c.cMailSent,'0') cMailSent" +
-                    ", IFNULL(c.cPrintedx,'0') cPrintedx" +
-                    ", IFNULL(c.cRaffledx,'0') cRaffledx" +
-                    ", IFNULL(c.nEntryNox, 0 ) nEntryNox" +
-                    ", IFNULL(c.sEventIDx, '') sEventIDx" +
-                    ", IFNULL(a.sModified,'') sModified" +
-                    ", IFNULL(a.dModified,'') dModified" +
+                    " IFNULL(a.sTransNox,'')  sTransNox" +
+                    ", IFNULL(a.dTransact,'') dTransact" +
+                    ", IFNULL(a.sBranchCd,'') sBranchCd" +
+                    ", IFNULL(a.sSourceCd,'') sSourceCd" +
+                    ", IFNULL(a.sSourceNo,'') sSourceNo" +
+                    ", IFNULL(a.sReferNox,'') sReferNox" +
+                    ", IFNULL(a.aAcctNmbr,'') aAcctNmbr" +
+                    ", IFNULL(a.sClientID,'') sClientID" +
+                    ", IFNULL(a.sClientNm,'') sClientNm" +
+                    ", IFNULL(b.sAddressx,'') sAddressx" +
+                    ", IFNULL(b.sMobileNo,'') sMobileNo" +
+                    ", IFNULL(a.cDivision,'0') cDivision" +
+                    ", IFNULL(a.sRandomNo,'') sRandomNo" +
+                    ", IFNULL(a.sRaffleFr,'') sRaffleFr" +
+                    ", IFNULL(a.sRaffleTr,'') sRaffleTr" +
+                    ", IFNULL(a.nNoEntryx, 0 ) nNoEntryx" +
+                    ", IFNULL(a.cMsgSentx,'0') cMsgSentx" +
+                    ", IFNULL(a.cCltCnfrm,'0') cCltCnfrm" +
+                    ", IFNULL(a.cSysCnfrm,'0') cSysCnfrm" +
+                    ", IFNULL(a.cRaffledx,'0') cRaffledx" +
+                    ", IFNULL(a.dTimeStmp,'') dTimeStmp" +
                 " FROM " + MASTER_TABLE + " a " +
                 "   LEFT JOIN Position b " + 
                 "       ON a.sPositnID = b.sPositnID " +
                 "   LEFT JOIN Event_Detail c " + 
                 "       ON a.sAttndIDx = c.sAttndIDx " +
                 " ORDER BY a.sAttendNm";
+    }
+    
+    private String getSQ_Employee(){
+        return "SELECT  " +
+            "a.sEmployID  " +
+            ",a.sBranchCd " +
+            ",c.sCompnyNm " +
+            ",c.sAddressx " +
+            ",c.sMobileNo " +
+            ",b.sUserIDxx " +
+            ",d.sBranchNm " +
+            ",e.sPositnNm " +
+            "   FROM Employee_Master001 a " +
+            "   LEFT JOIN App_User_Master b " +
+            "     ON a.sEmployID = b.sEmployNo " +
+            "   LEFT JOIN Client_Master c " +
+            "     ON a.sEmployID = c.sClientID " +
+            "   LEFT JOIN Branch d " +
+            "     ON a.sBranchCd = d.sBranchCd " +
+            "   LEFT JOIN `Position` e " +
+            "     ON a.sPositnID = e.sPositnID " +
+            "     WHERE a.cRecdStat = '1'  " +
+            "     AND a.dFiredxxx IS NULL " +
+            "     AND b.sUserIDxx IS NOT NULL " +
+            "     GROUP BY a.sEmployID";
     }
     
     private String getSQ_Detail(){

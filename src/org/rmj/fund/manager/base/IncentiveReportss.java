@@ -387,16 +387,20 @@ public class IncentiveReportss {
         String lsSQL;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
+        
         String lsCondition = lsCondition =" AND LEFT(sTransNox, 4) = c.sBranchCD";
         String lsCondition2 = "";
         if(p_oBranch != null){
             lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
+        }else{
+            lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(p_oApp.getBranchCode());
         }
         
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
         lsSQL = getSQ_Master() + lsCondition + " ORDER BY xBranchNm, a.sMonthxxx";
+        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
@@ -2530,17 +2534,6 @@ public class IncentiveReportss {
     }
     public String getSQ_Master(){
         String lsSQL = "";
-        String lsStat = String.valueOf(p_nTranStat);
-        
-        if (lsStat.length() > 1){
-            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-            
-            lsSQL = " a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else{            
-            lsSQL = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
-        }
                 
         lsSQL = "SELECT" + 
                     "  a.sTransNox" +
@@ -2559,7 +2552,7 @@ public class IncentiveReportss {
                 " FROM Incentive_Master a" +
                     " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                     ", Branch c " +
-                " WHERE " + lsSQL ;
+                " WHERE " + lsCondition();
         
         return lsSQL;
     }
@@ -2572,16 +2565,7 @@ public class IncentiveReportss {
      private String getSQ_Detail(){
         String lsSQL = "";
         String lsStat = String.valueOf(p_nTranStat);
-        
-        if (lsStat.length() > 1){
-            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-            
-            lsSQL = " a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else{            
-            lsSQL = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
-        }
+      
         lsSQL = "SELECT " +
             "  IFNULL(a. sTransNox,'') sTransNox" +
             "  ,IFNULL(b.sEmployID,'') sEmployID" +
@@ -2609,7 +2593,7 @@ public class IncentiveReportss {
             "    ON b.sEmployID = g.sEmployID   " +
             "  LEFT JOIN Banks h" +
             "    ON g.sBankIDxx = h.sBankIDxx  " +
-            "WHERE  " + lsSQL;
+            "WHERE  " + lsCondition();
         return lsSQL;
     }
 //    private String getSQ_Detail(){
@@ -2666,17 +2650,6 @@ public class IncentiveReportss {
 //   
      private String getSQ_EmployeeDetail(){
         String lsSQL = "";
-        String lsStat = String.valueOf(p_nTranStat);
-        
-        if (lsStat.length() > 1){
-            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-            
-            lsSQL = " a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else{            
-            lsSQL = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
-        }
         lsSQL = "SELECT   b.sTransNox, " +
                 "  b.sEmployID, " +
                 "  IFNULL(i.sBranchNm,'')    xBranchNm, " +
@@ -2713,7 +2686,7 @@ public class IncentiveReportss {
                 "    ON f.sPositnID = h.sPositnID " +
                 "  LEFT JOIN Branch i " +
                 "    ON f.sBranchCd = i.sBranchCd  " +
-                "WHERE " + lsSQL;
+                "WHERE " + lsCondition();
         return lsSQL;
     }
 //    private String getSQ_EmployeeDetail(){
@@ -2986,7 +2959,31 @@ public class IncentiveReportss {
         
         return lnIndex;
     }
-    
+    private String lsCondition(){
+        String lsStat = String.valueOf(p_nTranStat);
+        String lsCondition = "";
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsCondition += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            
+            lsCondition = " a.cTranStat IN (" + lsCondition.substring(2) + ")";
+        } else{            
+            lsCondition = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
+            if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
+                if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+                    if (p_oApp.getDepartment().equals(AUDITOR)){
+                        if(lsStat.equals("1")){
+                            lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
+                        }else if(lsStat.equals("2")){
+                            lsCondition = lsCondition + " AND a.cApprovd2 = '1'";
+                        }
+                    }
+                }
+            }
+        }
+        return lsCondition;
+    }
     private void loadConfig(){
         //update the value on configuration before deployment
         System.setProperty(DEBUG_MODE, "0"); 
