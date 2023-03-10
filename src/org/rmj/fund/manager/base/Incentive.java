@@ -116,6 +116,10 @@ public class Incentive {
             }
         } 
         
+        if (p_oApp.getUserLevel() < UserRight.AUDIT){
+            p_sMessage = "Your account level is not authorized to use this transaction.";
+            return false;
+        }
         p_sMessage = "";
         
         createMaster();
@@ -410,24 +414,30 @@ public class Incentive {
                 p_sMessage = "Your employee level is not authorized to use this transaction.";
                 return false;
             }
-
             if (p_oApp.getUserLevel() < UserRight.SUPERVISOR){
                 p_sMessage = "Your account level is not authorized to use this transaction.";
                 return false;
             }
         }        
         
-        String lsSQL = getSQ_Master() + " AND  LEFT(a.sTransNox, 4) = " +SQLUtil.toSQL(p_oApp.getBranchCode());
+        String lsSQL = getSQ_Master();
         String lsCondition = "";
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
             if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
-                if (!p_oApp.getDepartment().equals(MIS)) lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+                if (!p_oApp.getDepartment().equals(AUDITOR)) lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
             }
         } else{
-            if (!p_oApp.isMainOffice()) lsCondition = "a.sTransNox LIKE " + SQLUtil.toSQL(p_oApp.getBranchCode() + "%");
+            if (!p_oApp.isMainOffice()) lsCondition =  "  LEFT(a.sTransNox, 4) = " +SQLUtil.toSQL(p_oApp.getBranchCode());
         }
         if (!lsCondition.isEmpty()) lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+        
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));   
+        else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+        }
+        
         System.out.println(lsSQL);
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
@@ -2557,17 +2567,18 @@ public class Incentive {
     public String getSQ_Master(){
         String lsSQL = "";
         String lsStat = String.valueOf(p_nTranStat);
-        
-        if (lsStat.length() > 1){
-            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-            
-            lsSQL = " AND a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else{            
-            lsSQL = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
-        }
-                
+//        String lsCondition = "";
+//        
+//        if (lsStat.length() > 1){
+//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+//            }
+//            
+//            lsSQL = " AND a.cTranStat IN (" + lsSQL.substring(2) + ")";
+//        } else{            
+//            lsSQL = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
+//        }
+//                
         lsSQL = "SELECT" + 
                     "  a.sTransNox" +
                     ", a.dTransact" +
@@ -2590,7 +2601,7 @@ public class Incentive {
                         " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                     ", Branch c " +
                 " WHERE LEFT(a.sTransNox, 4) = c.sBranchCd" +
-                    lsSQL;
+                     lsCondition();
         
         return lsSQL;
     }
@@ -2691,6 +2702,31 @@ public class Incentive {
                     ", 0.00 nTotalAmt" +
                 " FROM Incentive_Detail_Ded_Allocation_Employee a" +
                     " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID";
+    }
+    
+    private String lsCondition(){
+        String lsStat = String.valueOf(p_nTranStat);
+        String lsCondition = "";
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsCondition += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            
+            lsCondition = " AND a.cTranStat IN (" + lsCondition.substring(2) + ")";
+        } else{            
+            lsCondition = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
+            
+        }
+        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){          
+            System.out.println("department  = " + p_oApp.getDepartment());
+            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+                if (p_oApp.getDepartment().equals(AUDITOR)){
+                    lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
+                    System.out.println("lsCondition  = " + lsCondition);
+                }
+            }
+        }
+        return lsCondition;
     }
     
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
