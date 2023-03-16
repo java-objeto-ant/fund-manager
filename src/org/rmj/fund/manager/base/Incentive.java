@@ -2724,7 +2724,12 @@ public class Incentive {
                     lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
                     System.out.println("lsCondition  = " + lsCondition);
                 }
+            }else{
+                lsCondition = lsCondition + " AND LEFT(a.sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
             }
+        }else{
+           lsCondition = lsCondition + " AND LEFT(a.sTransNox,4)  = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+
         }
         return lsCondition;
     }

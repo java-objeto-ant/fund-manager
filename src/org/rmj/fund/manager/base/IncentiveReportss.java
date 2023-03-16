@@ -60,6 +60,7 @@ public class IncentiveReportss {
 
     private CachedRowSet p_oBranch;
     private CachedRowSet p_oMaster;
+    private CachedRowSet p_oMasterVal;
     private CachedRowSet p_oDetail;
     private CachedRowSet p_oDetailVal;
     private CachedRowSet p_oDetailEmp;
@@ -143,7 +144,7 @@ public class IncentiveReportss {
         
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
-           lsCondition1 =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
+           lsCondition1 =  lsCondition1 + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
         
         lsCondition =  lsCondition + " GROUP BY b.sEmployID,a.sMonthxxx,a.sTransNox";
@@ -214,32 +215,31 @@ public class IncentiveReportss {
             p_sMessage = "Application driver is not set.";
             return false;
         }
-        createDetailCategory();
+//        createDetailCategory();
         p_sMessage = "";
         String lsSQL;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         String lsCondition = "";
-        String lsCondition1 = "";
-        String lsCondition2 = "";
-        
         if(p_oEmployee != null){
-            lsCondition = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
+           lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
         if(p_oBranch != null){
-            lsCondition =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
+           lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
-//        lsCondition = lsCondition;
         
-        lsSQL = getSQ_EmployeeDetail() + lsCondition + " GROUP BY  c.sEmployID";
+      
+        
+        lsSQL = getSQ_EmployeeDetail() + lsCondition + " GROUP BY b.sEmployID,a.sMonthxxx";
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailCateg = factory.createCachedRowSet();
         p_oDetailCateg.populate(loRS);
         MiscUtil.close(loRS);
+        
         
 
 //        computeEmpTotalIncentivesAmount();
@@ -247,7 +247,7 @@ public class IncentiveReportss {
         p_nEditMode = EditMode.READY;
         return true;
     }
-    
+//    
     private void computeEmpTotalIncentivesAmounts() throws SQLException{
         int lnIncRow;
         int lnAlcRow;
@@ -298,7 +298,7 @@ public class IncentiveReportss {
                 
                 if (Double.parseDouble(arrXInctvPrc[lnctr]) > 0.00){
                     lnInctvAmt = DecryptAmount(arrXInctvAmt[lnctr]);
-                    lnInctvAmt = lnInctvAmt * Double.parseDouble(arrXInctvPrc[0]) / 100;
+                    lnInctvAmt = lnInctvAmt * Double.parseDouble(arrXInctvPrc[lnctr]) / 100;
 
                 }else{
                     lnInctvAmt = DecryptAmount(arrXIncentve[lnctr]);
@@ -362,9 +362,8 @@ public class IncentiveReportss {
         
          }
     }
-    
+//    
     public boolean OpenTransactionMaster(String fsValue) throws SQLException{
-         
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
@@ -388,23 +387,31 @@ public class IncentiveReportss {
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         
-        String lsCondition = lsCondition =" AND LEFT(sTransNox, 4) = c.sBranchCD";
+        String lsCondition = "";
         String lsCondition2 = "";
         if(p_oBranch != null){
             lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
-        }else{
-            lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(p_oApp.getBranchCode());
         }
+//        else{
+//            lsCondition = lsCondition + " AND c.sBranchCD = " +  SQLUtil.toSQL(p_oApp.getBranchCode());
+//        }
         
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
-        lsSQL = getSQ_Master() + lsCondition + " ORDER BY xBranchNm, a.sMonthxxx";
-        System.out.println(lsSQL);
+        lsSQL = getSQ_Master() + lsCondition + " ORDER BY a.sTransNox, a.sMonthxxx";
+        System.out.println("master = " + lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
         MiscUtil.close(loRS);
+        
+//        lsSQL = getSQ_MasterVal()+ lsCondition + " ORDER BY xBranchNm, a.sMonthxxx";
+//        System.out.println("master = " + lsSQL);
+//        loRS = p_oApp.executeQuery(lsSQL);
+//        p_oMasterVal = factory.createCachedRowSet();
+//        p_oMasterVal.populate(loRS);
+//        MiscUtil.close(loRS);
 //        computeEmpTotalIncentiveAmountMaster() ;
         computeSmmaryIncentiveAmountMaster();
         p_nEditMode = EditMode.READY;
@@ -1142,13 +1149,14 @@ public class IncentiveReportss {
         
         p_oDetailCateg.absolute(fnRow);
         switch (fnIndex){
-            case 6://xIncentive
+            case 4://xIncentive
+            case 5://xIncentive
+            case 6://xInctvAmt
+            case 7://xInctvAmt
             case 8://xInctvAmt
+            case 9://xInctvAmt
+            case 10://xInctvAmt
             case 11://xInctvAmt
-            case 12://xInctvAmt
-            case 13://xInctvAmt
-            case 14://xInctvAmt
-            case 15://xInctvAmt
                 if(p_oDetailCateg.getString(fnIndex).equalsIgnoreCase("0.0")){
                     return p_oDetailCateg.getObject(fnIndex);
                 }else{
@@ -1601,7 +1609,6 @@ public class IncentiveReportss {
             lnIncRow = getIncentiveCount();
             lnAlcRow = getIncentiveEmployeeAllocationCount();
             
-            
             for (lnCtr2 = 1; lnCtr2 <= lnIncRow; lnCtr2++){
                 p_oAllctn.absolute(lnCtr2);
                 
@@ -1644,11 +1651,10 @@ public class IncentiveReportss {
                                 lnTotalAmt += lnIncentve;
                                 lnTotalAmt = lnTotalAmt * 100 / 100; //round off
                                 break;
-                        }                
-                        
+                        }  
                         p_oAllctn_Emp.updateObject("nTotalAmt", lnIncentve);
                         p_oAllctn_Emp.updateRow();
-                        
+                      
                         lnTotalInc += lnIncentve;
                     } 
                 }
@@ -1694,7 +1700,7 @@ public class IncentiveReportss {
                     } 
                 }
             }
-            
+                
             p_oDetailEmp.updateString("xIncentve", String.valueOf(lnTotalInc));
             p_oDetailEmp.updateString("xDeductnx", String.valueOf(lnTotalDed));
             p_oDetailEmp.updateString("nTotalAmt", EncryptAmount(lnTotalInc - lnTotalDed));
@@ -2550,6 +2556,31 @@ public class IncentiveReportss {
                     ",  0.0 nDei2xxxx " +
                     ",  0.0 xDeductnx " +
                 " FROM Incentive_Master a" +
+                    " LEFT JOIN Department b " +
+                    "   ON a.sDeptIDxx = b.sDeptIDxx" +
+                    " LEFT JOIN Branch c " +
+                    "   ON LEFT(a.sTransNox,4) = c.sBranchCd" +
+                " WHERE " + lsCondition();
+        
+        return lsSQL;
+    }public String getSQ_MasterVal(){
+        String lsSQL = "";
+                
+        lsSQL = "SELECT" + 
+                    "  a.sTransNox" +
+                    ", a.sMonthxxx" +
+                    ", a.sRemarksx" +
+                    ", a.cTranStat" +
+                    ", c.sBranchNm xBranchNm" +
+                    ", IFNULL(b.sDeptName, '') xDeptName" +
+                    ", 0.0 xTotalAmt " +
+                    ",  0.0 nMcSalesx " +
+                    ",  0.0 nSpareprt " +
+                    ",  0.0 nServicex " +
+                    ",  0.0 nRegisTri " +
+                    ",  0.0 nDei2xxxx " +
+                    ",  0.0 xDeductnx " +
+                " FROM Incentive_Master a" +
                     " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                     ", Branch c " +
                 " WHERE " + lsCondition();
@@ -2596,58 +2627,6 @@ public class IncentiveReportss {
             "WHERE  " + lsCondition();
         return lsSQL;
     }
-//    private String getSQ_Detail(){
-//        String lsSQL = "";
-//        String lsStat = String.valueOf(p_nTranStat);
-//        
-//        if (lsStat.length() > 1){
-//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-//            }
-//            
-//            lsSQL = " g.cTranStat IN (" + lsSQL.substring(2) + ")";
-//        } else{            
-//            lsSQL = " g.cTranStat = " + SQLUtil.toSQL(lsStat);
-//        }
-//        lsSQL = "SELECT " +
-//                "  IFNULL(a.sTransNox, '')    sTransNox, " +
-//                "  IFNULL(a.nEntryNox, '')    nEntryNox, " +
-//                "  IFNULL(a.sEmployID, '')    sEmployID, " +
-//                "  IFNULL(a.nTotalAmt, 0.0)    nTotalAmt, " +
-//                "  IFNULL(c.sCompnyNm, '')    xEmployNm, " +
-//                "  IFNULL(d.sEmpLevNm, '')    xEmpLevNm, " +
-//                "  IFNULL(e.sPositnNm, '')    xPositnNm, " +
-//                "  IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(b.dStartEmp, b.dHiredxxx)) / 365), '')    xSrvcYear, " +
-//                "  f.sBranchNm xBranchNm, " +
-//                "  g.sMonthxxx, " +
-//                "  g.sRemarksx, " +
-//                "  g.cTranStat, " +
-//                "  g.cTranStat, " +
-//                "  IFNULL(h.sBankAcct,'') xBankAcct, " +
-//                "  IFNULL(i.sBankName,'') xBankName, " +
-//                "  0.00 xIncentve," +
-//                "  0.00 xDeductnx " +
-//                "FROM Incentive_Detail a, " +
-//                "  Employee_Master001 b " +
-//                "  LEFT JOIN Client_Master c " +
-//                "    ON b.sEmployID = c.sClientID " +
-//                "  LEFT JOIN Employee_Level d " +
-//                "    ON b.sEmpLevID = d.sEmpLevID " +
-//                "  LEFT JOIN `Position` e " +
-//                "    ON b.sPositnID = e.sPositnID, " +
-//                "  Branch f, " +
-//                "  Incentive_Master g, " +
-//                "  Employee_Incentive_Bank_Info h," +
-//                "  Banks i " +
-//                "WHERE a.sEmployID = b.sEmployID " +
-//                "    AND " + lsSQL +
-//                "    AND LEFT(a.sTransNox, 4) = f.sBranchCd " +
-//                "    AND a.sTransNox = g.sTransNox " +
-//                "    AND a.sEmployID = h.sEmployID "+
-//                "    AND h.sBankIDxx = i.sBankIDxx ";
-//        return lsSQL;
-//    }
-//   
      private String getSQ_EmployeeDetail(){
         String lsSQL = "";
         lsSQL = "SELECT   b.sTransNox, " +
@@ -2685,72 +2664,10 @@ public class IncentiveReportss {
                 "  LEFT JOIN `Position` h " +
                 "    ON f.sPositnID = h.sPositnID " +
                 "  LEFT JOIN Branch i " +
-                "    ON f.sBranchCd = i.sBranchCd  " +
+                "    ON LEFT(a.sTransNox,4) = i.sBranchCd  " +
                 "WHERE " + lsCondition();
         return lsSQL;
     }
-//    private String getSQ_EmployeeDetail(){
-//        String lsSQL = "";
-//        String lsStat = String.valueOf(p_nTranStat);
-//        
-//        if (lsStat.length() > 1){
-//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-//            }
-//            
-//            lsSQL = " a.cTranStat IN (" + lsSQL.substring(2) + ")";
-//        } else{            
-//            lsSQL = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
-//        }
-//        lsSQL = "SELECT " +
-//                "  b.sTransNox, " +
-//                "  b.sEmployID, " +
-//                "  IFNULL(i.sBranchNm,'')    xBranchNm, " +
-//                "  IFNULL(g.sCompnyNm,'')    xEmployNm, " +
-//                "  IFNULL(e.sInctveCD,'')    sInctveCD, " +
-////                "  IFNULL(e.sInctveDs,'')    sInctveDs, " +
-//                "  IFNULL(c.nAllcAmtx,'')    xIncentve, " +
-//                "  IFNULL(c.nAllcPerc,'')    xInctvPrc, " +
-//                "  IFNULL(d.nInctvAmt,'')    xInctvAmt, " +
-//                "  IFNULL(h.sPositnNm,'')    xPositnNm, " +
-//                "  IFNULL(a.sMonthxxx,'')    sMonthxxx, " +
-//                "  CASE WHEN c.sInctveCD = '001'  THEN c.nAllcAmtx " +
-//                "  ELSE 0.0  " +
-//                "  END AS nMcSalesx, " +
-//                "  CASE WHEN c.sInctveCD = '002'  THEN c.nAllcAmtx " +
-//                "  ELSE 0.0  " +
-//                "  END AS  nSpareprt, " +
-//                "  CASE WHEN c.sInctveCD = '003'  THEN c.nAllcAmtx " +
-//                "  ELSE 0.0  " +
-//                "  END AS nServicex, " +
-//                "  CASE WHEN c.sInctveCD = '004'  THEN c.nAllcAmtx " +
-//                "  ELSE 0.0  " +
-//                "  END AS nRegisTri, " +
-//                "  CASE WHEN c.sInctveCD = '005'  THEN c.nAllcAmtx " +
-//                "  ELSE 0.0  " +
-//                "  END AS nDei2xxxx " +
-//                "FROM Incentive_Master a " +
-//                "  LEFT JOIN Incentive_Detail b " +
-//                "    ON a.sTransNox = b.sTransNox " +
-//                "  LEFT JOIN Incentive_Detail_Allocation_Employee c " +
-//                "    ON b.sTransNox = c.sTransNox " +
-//                "      AND b.sEmployID = c.sEmployID " +
-//                "  LEFT JOIN Incentive_Detail_Allocation d " +
-//                "    ON c.sTransNox = d.sTransNox " +
-//                "      AND c.sInctveCD = d.sInctveCD " +
-//                "  LEFT JOIN Incentive e " +
-//                "    ON c.sInctveCD = e.sInctveCD " +
-//                "  LEFT JOIN Employee_Master001 f " +
-//                "    ON b.sEmployID = f.sEmployID " +
-//                "  LEFT JOIN Client_Master g " +
-//                "    ON f.sEmployID = g.sClientID " +
-//                "  LEFT JOIN `Position` h " +
-//                "    ON f.sPositnID = h.sPositnID " +
-//                "  LEFT JOIN Branch i " +
-//                "    ON f.sBranchCd = i.sBranchCd  " +
-//                "WHERE " + lsSQL;
-//        return lsSQL;
-//    }
     private String getSQ_MasterDetail(){
         return "SELECT" +
                     "  a.sTransNox" +
@@ -2968,9 +2885,16 @@ public class IncentiveReportss {
             }
             
             lsCondition = " a.cTranStat IN (" + lsCondition.substring(2) + ")";
-        } else{            
-            lsCondition = " a.cTranStat = " + SQLUtil.toSQL(lsStat);
-            if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
+        } else{  
+            if(lsStat.equals("3")){
+                lsCondition = " a.cTranStat = '3'";
+            }else{
+                lsCondition = " a.cTranStat = '1'";
+            }
+            
+        }
+        System.out.println("department  = " + p_oApp.getDepartment());
+        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
                 if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
                     if (p_oApp.getDepartment().equals(AUDITOR)){
                         if(lsStat.equals("1")){
@@ -2979,9 +2903,13 @@ public class IncentiveReportss {
                             lsCondition = lsCondition + " AND a.cApprovd2 = '1'";
                         }
                     }
+                }else{
+                    lsCondition = lsCondition + " AND LEFT(a.sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
                 }
+            }else{
+               lsCondition = lsCondition + " AND LEFT(a.sTransNox,4)  = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+                
             }
-        }
         return lsCondition;
     }
     private void loadConfig(){

@@ -30,7 +30,7 @@ import org.rmj.fund.manager.base.LMasDetTrans;
  * @author User
  */
 public class Raffle {
-    private final String MASTER_TABLE = "Guanzon_ILMJ";
+    private final String MASTER_TABLE = "ILMJ_Master";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
