@@ -167,7 +167,7 @@ public class PanaloItem {
     
     
     @Test 
-    public void test08Search(){
+    public void test08ActivateRecord(){
         try {
             if (trans.SearchRecord("Updated Panalo", false)){
                 if (trans.ActivateRecord()){
@@ -181,7 +181,7 @@ public class PanaloItem {
         }
     }
     @Test 
-    public void test09Search(){
+    public void test09DeactivateRecord(){
         try {
             if (trans.SearchRecord("Updated Panalo", false)){
                 if (trans.DeactivateRecord()){

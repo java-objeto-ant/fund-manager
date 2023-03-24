@@ -119,7 +119,7 @@ public class Raffle {
         
         if (!lsSQL.isEmpty()){
             if (!p_bWithParent) p_oApp.beginTrans();
-            
+            System.out.println(p_sBranchCd);
             if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, "") <= 0){
                 if (!p_bWithParent) p_oApp.rollbackTrans();
                 p_sMessage = p_oApp.getErrMsg() + ";" + p_oApp.getMessage();
@@ -147,7 +147,7 @@ public class Raffle {
         p_oMaster.first();
         
         if ("1".equals(p_oMaster.getString("cTranStat"))){
-            p_sMessage = "Attendee is already present..";
+            p_sMessage = "Record is already activated..";
             return false;
         }
         
@@ -169,6 +169,91 @@ public class Raffle {
         return true;
     }
     
+     public boolean DeactivateRecord() throws SQLException{
+        if (p_nEditMode != EditMode.READY){
+            p_sMessage = "Invalid edit mode.";
+            return false;
+        }
+        
+        p_oMaster.first();
+        
+        if ("0".equals(p_oMaster.getString("cTranStat"))){
+            p_sMessage = "Record is already deactivated..";
+            return false;
+        }
+        
+        String lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                            "  cTranStat = '0'" +
+                            ", sModified = " + SQLUtil.toSQL(p_oApp.getUserID()) +
+                            ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+                        " WHERE sTransNox = " + SQLUtil.toSQL(p_oMaster.getString("sTransNox"));
+
+        if (!p_bWithParent) p_oApp.beginTrans();
+        if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, "") <= 0){
+            if (!p_bWithParent) p_oApp.rollbackTrans();
+            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+            return false;
+        }
+        if (!p_bWithParent) p_oApp.commitTrans();
+        
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+    public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        String lsSQL = getSQ_Record();
+        
+        
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));   
+        else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "dRaffleDt LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+        }
+        System.out.println("slq = " +lsSQL);
+        if (p_bWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                p_oApp, 
+                                lsSQL, 
+                                fsValue, 
+                                "TansNox»Raffle Date", 
+                                "sTransNox»dRaffleDt", 
+                                "sTransNox»dRaffleDt", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null) 
+                return OpenRecord((String) loJSON.get("sTransNox"));
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));   
+        else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "dRaffleDt LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+            lsSQL += " LIMIT 1";
+        }
+        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("sTransNox");
+        MiscUtil.close(loRS);
+        
+        return OpenRecord(lsSQL);
+    }
     
     public boolean OpenRecord(String fsValue) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
@@ -185,7 +270,7 @@ public class Raffle {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_Record(), "a.sAttndIDx = " + SQLUtil.toSQL(fsValue));
+        lsSQL = MiscUtil.addCondition(getSQ_Record(), "sTransNox = " + SQLUtil.toSQL(fsValue));
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMaster = factory.createCachedRowSet();
@@ -238,33 +323,21 @@ public class Raffle {
     public void setMaster(int fnIndex, Object foValue) throws SQLException{
         p_oMaster.first();
         switch (fnIndex){
-            case 4://sFirstNme
-            case 6://sSuffixNm
-                p_oMaster.updateString(fnIndex, ((String) foValue).trim());
-                p_oMaster.updateRow();
-
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
-                break;
-            case 5://cTranStat
-                
-                if (foValue instanceof Integer)
-                    p_oMaster.updateInt(fnIndex, (int) foValue);
-                else 
-                    p_oMaster.updateInt(fnIndex, 0);
-                
-                p_oMaster.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
-                break;
-            case 2://dTransact
             case 3://dRaffleDt
-            case 7://dModified
+                System.out.println(fnIndex);
                 if (foValue instanceof Date){
                     p_oMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
                 } else
-                    p_oMaster.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
+                    p_oMaster.updateObject(fnIndex, foValue);
                 
                 p_oMaster.updateRow();
                 
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
+                break;
+            case 4://sRemarksx
+                p_oMaster.updateString(fnIndex, ((String) foValue).trim());
+                p_oMaster.updateRow();
+
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
         }
@@ -346,8 +419,9 @@ public class Raffle {
         
         MiscUtil.initRowSet(p_oMaster);    
         
-        p_oMaster.updateString("sTransNox", MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", false, p_oApp.getConnection(), ""));
+        p_oMaster.updateString("sTransNox", MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, p_oApp.getConnection(), p_oApp.getBranchCode()));
         p_oMaster.updateObject("cTranStat", 0);
+        p_oMaster.updateObject("dTransact", p_oApp.getServerDate());
         
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
@@ -355,14 +429,14 @@ public class Raffle {
         
     private String getSQ_Record(){
         return "SELECT" +
-                    " IFNULL(a.sTransNox,'')  sTransNox" +
-                    ", IFNULL(a.dTransact,'') dTransact" +
-                    ", IFNULL(a.dRaffleDt,'') dRaffleDt" +
-                    ", IFNULL(a.sRemarksx,'') sRemarksx" +
-                    ", IFNULL(a.cTranStat, 0) cTranStat" +
-                    ", IFNULL(a.sModified,'') sModified" +
-                    ", IFNULL(a.dModified,'') dModified" +
-                    ", IFNULL(a.dTimeStmp,'') dTimeStmp" +
+                    " IFNULL(sTransNox,'')  sTransNox" +
+                    ", IFNULL(dTransact,'') dTransact" +
+                    ", IFNULL(dRaffleDt,'') dRaffleDt" +
+                    ", IFNULL(sRemarksx,'') sRemarksx" +
+                    ", IFNULL(cTranStat, 0) cTranStat" +
+                    ", IFNULL(sModified,'') sModified" +
+                    ", IFNULL(dModified,'') dModified" +
+                    ", IFNULL(dTimeStmp,'') dTimeStmp" +
                 " FROM " + MASTER_TABLE ;
     }
 public void displayMasFields() throws SQLException{
