@@ -5,6 +5,7 @@
 package org.rmj.fund.manager.base;
 
 import com.sun.rowset.CachedRowSetImpl;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -24,6 +25,7 @@ import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.StringUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.TransactionStatus;
@@ -53,19 +55,17 @@ public class IncentiveReportss {
     private String p_sBranchCd;
     private int p_nEditMode;
     private int p_nTranStat;
-    private boolean isEmpInctive;
 
     private String p_sMessage;
     private boolean p_bWithUI = true;
 
     private CachedRowSet p_oBranch;
     private CachedRowSet p_oMaster;
-    private CachedRowSet p_oMasterVal;
     private CachedRowSet p_oDetail;
     private CachedRowSet p_oDetailVal;
     private CachedRowSet p_oDetailEmp;
+    private CachedRowSet p_oIncCateg;
     private CachedRowSet p_oDetailCateg;
-    private CachedRowSet p_oDtailCateg;
     private CachedRowSet p_oAllctn;
     private CachedRowSet p_oAllctn_Emp;
     private CachedRowSet p_oDedctn;
@@ -122,7 +122,6 @@ public class IncentiveReportss {
         
         createDetailEmployee();
         createDetailEmployeeNew();
-        isEmpInctive = true;
         p_sMessage = ""; 
         String lsSQL;
         ResultSet loRS;
@@ -132,15 +131,15 @@ public class IncentiveReportss {
          
         if(p_oEmployee != null){
 //            lsCondition = lsCondition + " AND a.sEmployID = " +  SQLUtil.toSQL(getEmployee("sEmployID"));  
-
             lsCondition = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
             lsCondition1 = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
         }
-        if(p_oBranch != null){
-//            lsCondition = lsCondition + " AND f.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
-            lsCondition =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
-            lsCondition1 =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
-        }
+        
+//        if(p_oBranch != null){
+////            lsCondition = lsCondition + " AND f.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
+//            lsCondition =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
+//            lsCondition1 =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
+//        }
         
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
@@ -210,44 +209,102 @@ public class IncentiveReportss {
         
     }
     public boolean OpenTransactionCategory(String fsValue) throws SQLException{
-         
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
         }
-//        createDetailCategory();
+
         p_sMessage = "";
         String lsSQL;
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         String lsCondition = "";
-        if(p_oEmployee != null){
-           lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
-        }
-        if(p_oBranch != null){
-           lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
-        }
+         
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
-        
-      
-        
-        lsSQL = getSQ_EmployeeDetail() + lsCondition + " GROUP BY b.sEmployID,a.sMonthxxx";
-        System.out.println(lsSQL);
+
+        lsSQL = getSQ_EmployeeDetail() + lsCondition;
         loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (MiscUtil.RecordCount(loRS) <= 0){
+            p_sMessage = "No record to load.";
+            return false;
+        }
+        
         p_oDetailCateg = factory.createCachedRowSet();
         p_oDetailCateg.populate(loRS);
         MiscUtil.close(loRS);
         
+        createIncByCategory();
+        double lnValue = 0.00;
         
+        for (int lnCtr = 1; lnCtr <= getCategoryCount(); lnCtr++){
+            lsSQL = (String) getDetailCategory(lnCtr, "sEmployID");
+            
+            setIncByCategory(lsSQL, "sEmployID", (String) getDetailCategory(lnCtr, "sEmployID"));
+            setIncByCategory(lsSQL, "xBranchNm", (String) getDetailCategory(lnCtr, "xBranchNm"));
+            setIncByCategory(lsSQL, "xEmployNm", (String) getDetailCategory(lnCtr, "xEmployNm"));
+            setIncByCategory(lsSQL, "xPositnNm", (String) getDetailCategory(lnCtr, "xPositnNm"));
+            setIncByCategory(lsSQL, "sMonthxxx", (String) getDetailCategory(lnCtr, "sMonthxxx"));
+            
+            lnValue = ((double) getDetailCategory(lnCtr, "xMCSalesx") * (double) getDetailCategory(lnCtr, "pMCSalesx") / 100) + (double) getDetailCategory(lnCtr, "aMCSalesx");
+            lnValue += (double) getIncByEmployee(lsSQL, "xMCSalesx");
+            setIncByCategory(lsSQL, "xMCSalesx", lnValue);
+                 
+            lnValue = ((double) getDetailCategory(lnCtr, "xSPSalesx") * (double) getDetailCategory(lnCtr, "pSPSalesx") / 100) + (double) getDetailCategory(lnCtr, "aSPSalesx");
+            lnValue += (double) getIncByEmployee(lsSQL, "xSPSalesx");
+            setIncByCategory(lsSQL, "xSPSalesx", lnValue);
+            
+            lnValue = ((double) getDetailCategory(lnCtr, "xServicex") * (double) getDetailCategory(lnCtr, "pServicex") / 100) + (double) getDetailCategory(lnCtr, "aServicex");
+            lnValue += (double) getIncByEmployee(lsSQL, "xServicex");
+            setIncByCategory(lsSQL, "xServicex", lnValue);
+            
+            lnValue = ((double) getDetailCategory(lnCtr, "xLTOPoolx") * (double) getDetailCategory(lnCtr, "pLTOPoolx") / 100) + (double) getDetailCategory(lnCtr, "aLTOPoolx");
+            lnValue += (double) getIncByEmployee(lsSQL, "xLTOPoolx");
+            setIncByCategory(lsSQL, "xLTOPoolx", lnValue);
+            
+            lnValue = ((double) getDetailCategory(lnCtr, "xDEI2xxxx") * (double) getDetailCategory(lnCtr, "pDEI2xxxx") / 100) + (double) getDetailCategory(lnCtr, "aDEI2xxxx");
+            lnValue += (double) getIncByEmployee(lsSQL, "xDEI2xxxx");
+            setIncByCategory(lsSQL, "xDEI2xxxx", lnValue);
+            
+            lnValue = ((double) getDetailCategory(lnCtr, "xCollectn") * (double) getDetailCategory(lnCtr, "pCollectn") / 100) + (double) getDetailCategory(lnCtr, "aCollectn");
+            lnValue += (double) getIncByEmployee(lsSQL, "xDEI2xxxx");
+            setIncByCategory(lsSQL, "xDEI2xxxx", lnValue);
+            
+            lsSQL = "SELECT" +
+                            "  a.sEmployID" +
+                            ", b.sRemarksx" +
+                            ", b.nDedctAmt" +
+                            ", a.nAllcAmtx" +
+                            ", a.nAllcPerc" +
+                    " FROM Incentive_Detail_Ded_Allocation_Employee a" +
+                            ", Incentive_Detail_Ded_Allocation b" +
+                    " WHERE a.sTransNox = b.sTransNox";
+            
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox = " + SQLUtil.toSQL((String) getDetailCategory(lnCtr, "sTransNox")) +
+                                                    " AND a.sEmployID = " + SQLUtil.toSQL((String) getDetailCategory(lnCtr, "sEmployID")));
+            
+            loRS = p_oApp.executeQuery(lsSQL);
+            lnValue = 0.00;
+            while (loRS.next()){
+                try {
+                    lnValue = Double.valueOf(loRS.getString("nAllcPerc"));
+                } catch (NumberFormatException e) {
+                    lnValue =  DecryptAmount(loRS.getString("nAllcPerc"));
+                } 
+                
+                lnValue = (DecryptAmount(loRS.getString("nDedctAmt")) * lnValue / 100) + DecryptAmount(loRS.getString("nAllcAmtx"));
+                lnValue += (double) getIncByEmployee(loRS.getString("sEmployID"), "xDeductnx");
+                setIncByCategory(loRS.getString("sEmployID"), "xDeductnx", lnValue);
+            }  
+            MiscUtil.close(loRS);
+        }
 
-//        computeEmpTotalIncentivesAmount();
-        computeEmpTotalIncentivesAmounts();
         p_nEditMode = EditMode.READY;
         return true;
     }
-//    
+    
     private void computeEmpTotalIncentivesAmounts() throws SQLException{
         int lnIncRow;
         int lnAlcRow;
@@ -746,10 +803,17 @@ public class IncentiveReportss {
         p_oDetailVal.last();
         return p_oDetailVal.getRow();
     }
+    
     public int getCategoryCount() throws SQLException{
         p_oDetailCateg.last();
         return p_oDetailCateg.getRow();
     }
+    
+    public int getIncByCategoryCount() throws SQLException{
+        p_oIncCateg.last();
+        return p_oIncCateg.getRow();
+    }
+    
     public int getIncentiveCount() throws SQLException{
         p_oAllctn.last();
         return p_oAllctn.getRow();
@@ -1070,6 +1134,54 @@ public class IncentiveReportss {
         }
     }
     
+    public void setDetailCategory(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        if (getCategoryCount()== 0 || fnRow == 0) return;
+        
+        p_oDetailCateg.absolute(fnRow);
+    
+        p_oDetailCateg.updateObject(fnIndex, foValue);
+    }
+    
+    public void setDetailCategory(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setDetailCategory(fnRow, getColumnIndex(p_oDetailCateg, fsIndex), foValue);
+    }
+    
+    public void setIncByCategory(String fsEmployID, String fsIndex, Object foValue) throws SQLException{
+        setIncByCategory(fsEmployID, getColumnIndex(p_oIncCateg, fsIndex), foValue);
+    }
+    
+    public void setIncByCategory(String fsEmployID, int fnIndex, Object foValue) throws SQLException{
+        if (fsEmployID.isEmpty()) return;
+        
+        if (getIncByCategoryCount() == 0){
+            p_oIncCateg.moveToInsertRow();
+            MiscUtil.initRowSet(p_oIncCateg);       
+            p_oIncCateg.updateObject(fnIndex, foValue);
+            p_oIncCateg.insertRow();
+            p_oIncCateg.moveToCurrentRow();
+        } else {
+            p_oIncCateg.beforeFirst();
+            
+            boolean lbAdded = false;
+            while(p_oIncCateg.next()){
+                if (fsEmployID.equals(p_oIncCateg.getString("sEmployID"))){
+                    p_oIncCateg.updateObject(fnIndex, foValue);
+                    p_oIncCateg.updateRow();
+                    lbAdded = true;
+                }
+            }
+            
+            if (!lbAdded){
+                p_oIncCateg.last();
+                p_oIncCateg.moveToInsertRow();
+                MiscUtil.initRowSet(p_oIncCateg);       
+                p_oIncCateg.updateObject(fnIndex, foValue);
+                p_oIncCateg.insertRow();
+                p_oIncCateg.moveToCurrentRow();
+            }
+        }
+    }
+    
     public void setDeductionInfo(int fnRow, int fnIndex, Object foValue) throws SQLException{
         if (getDeductionCount() == 0 || fnRow == 0) return;
         
@@ -1143,39 +1255,79 @@ public class IncentiveReportss {
     public Object getNewDetailEmployee(int fnRow, String fsIndex) throws SQLException{
         return getNewDetailEmployee(fnRow, getColumnIndex(p_oDetailVal, fsIndex));
     }
+    
     public Object getDetailCategory(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         if (getCategoryCount() == 0 || fnRow > getCategoryCount()) return null;
-        
+
         p_oDetailCateg.absolute(fnRow);
         switch (fnIndex){
-            case 4://xIncentive
-            case 5://xIncentive
-            case 6://xInctvAmt
-            case 7://xInctvAmt
-            case 8://xInctvAmt
-            case 9://xInctvAmt
-            case 10://xInctvAmt
-            case 11://xInctvAmt
-                if(p_oDetailCateg.getString(fnIndex).equalsIgnoreCase("0.0")){
-                    return p_oDetailCateg.getObject(fnIndex);
-                }else{
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+            case 17:
+            case 18:
+            case 19:
+            case 20:
+            case 21:
+            case 22:
+            case 23:
+            case 24:
+            case 25:
+                try {
+                    return Double.valueOf(p_oDetailCateg.getString(fnIndex));
+                } catch (NumberFormatException e) {
                     return DecryptAmount(p_oDetailCateg.getString(fnIndex));
                 }
-//                return DecryptAmount(p_oDetailCateg.getString(fnIndex));
             default:
                 return p_oDetailCateg.getObject(fnIndex);
         }
     }
+    
     public Object getDetailCategory(int fnRow, String fsIndex) throws SQLException{
-        return getDetailCategory(fnRow, getColumnIndex(p_oDetailCateg, fsIndex));
+        return getDetailCategory(fnRow,getColumnIndex(p_oDetailCateg, fsIndex));
+    }
+    
+    public Object getIncByCategory(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        if (getIncByCategoryCount() == 0 || getIncByCategoryCount() < fnRow) return null;
+
+        p_oIncCateg.absolute(fnRow);
+        return p_oIncCateg.getObject(fnIndex);
+    }
+    
+    public Object getIncByCategory(int fnRow, String fsIndex) throws SQLException{
+        return getIncByCategory(fnRow,getColumnIndex(p_oIncCateg, fsIndex));
+    }
+    
+    private Object getIncByEmployee(String fsEmployID, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        if (getIncByCategoryCount() == 0) return null;
+
+        p_oIncCateg.beforeFirst();
+        while(p_oIncCateg.next()){
+            if (fsEmployID.equals(p_oIncCateg.getString("sEmployID"))){
+                return p_oIncCateg.getObject(fnIndex);
+            }
+        }
+        return null;
+    }
+    
+    private Object getIncByEmployee(String fsEmployID, String fsIndex) throws SQLException{
+        return getIncByEmployee(fsEmployID,getColumnIndex(p_oIncCateg, fsIndex));
     }
     
     public int getItemMasterCount() throws SQLException{
         p_oMaster.last();
         return p_oMaster.getRow();
     }
-    
     
     public Object getMaster(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -1878,6 +2030,69 @@ public class IncentiveReportss {
         p_oAllctn_Emp.setMetaData(meta);
     }
     
+    private void createIncByCategory() throws SQLException{
+        RowSetMetaData meta = new RowSetMetaDataImpl();        
+
+        meta.setColumnCount(12);
+        
+        meta.setColumnName(1, "sEmployID");
+        meta.setColumnLabel(1, "sEmployID");
+        meta.setColumnType(1, Types.VARCHAR);
+        meta.setColumnDisplaySize(1, 12);
+        
+        meta.setColumnName(2, "xBranchNm");
+        meta.setColumnLabel(2, "xBranchNm");
+        meta.setColumnType(2, Types.VARCHAR);
+        meta.setColumnDisplaySize(2, 50);
+        
+        meta.setColumnName(3, "xEmployNm");
+        meta.setColumnLabel(3, "xEmployNm");
+        meta.setColumnType(3, Types.VARCHAR);
+        meta.setColumnDisplaySize(3, 128);
+        
+        meta.setColumnName(4, "xPositnNm");
+        meta.setColumnLabel(4, "xPositnNm");
+        meta.setColumnType(4, Types.VARCHAR);
+        meta.setColumnDisplaySize(4, 30);
+        
+        meta.setColumnName(5, "sMonthxxx");
+        meta.setColumnLabel(5, "sMonthxxx");
+        meta.setColumnType(5, Types.VARCHAR);
+        meta.setColumnDisplaySize(5, 30);
+        
+        meta.setColumnName(6, "xMCSalesx");
+        meta.setColumnLabel(6, "xMCSalesx");
+        meta.setColumnType(6, Types.DOUBLE);
+        
+        meta.setColumnName(7, "xSPSalesx");
+        meta.setColumnLabel(7, "xSPSalesx");
+        meta.setColumnType(7, Types.DOUBLE);
+        
+        meta.setColumnName(8, "xServicex");
+        meta.setColumnLabel(8, "xServicex");
+        meta.setColumnType(8, Types.DOUBLE);
+        
+        meta.setColumnName(9, "xLTOPoolx");
+        meta.setColumnLabel(9, "xLTOPoolx");
+        meta.setColumnType(9, Types.DOUBLE);
+        
+        meta.setColumnName(10, "xDEI2xxxx");
+        meta.setColumnLabel(10, "xDEI2xxxx");
+        meta.setColumnType(10, Types.DOUBLE);
+        
+        meta.setColumnName(11, "xCollectn");
+        meta.setColumnLabel(11, "xCollectn");
+        meta.setColumnType(11, Types.DOUBLE);
+     
+        meta.setColumnName(12, "xDeductnx");
+        meta.setColumnLabel(12, "xDeductnx");
+        meta.setColumnType(12, Types.DOUBLE);
+        
+        p_oIncCateg = new CachedRowSetImpl();
+        p_oIncCateg.setMetaData(meta);
+    }
+    
+    
     private void createDetailAllocation() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
@@ -2169,177 +2384,7 @@ public class IncentiveReportss {
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta); 
     }
-//    private void createDetailCategory() throws SQLException{
-//        RowSetMetaData meta = new RowSetMetaDataImpl();        
-//
-//        meta.setColumnCount(17);
-//        
-//        meta.setColumnName(1, "sTransNox");
-//        meta.setColumnLabel(1, "sTransNox");
-//        meta.setColumnType(1, Types.VARCHAR);
-//        meta.setColumnDisplaySize(1, 12);
-//        
-//        meta.setColumnName(2, "sEmployID");
-//        meta.setColumnLabel(2, "sEmployID");
-//        meta.setColumnType(2, Types.VARCHAR);
-//        meta.setColumnDisplaySize(2, 12);
-//        
-//        meta.setColumnName(3, "nTotalAmt");
-//        meta.setColumnLabel(3, "nTotalAmt");
-//        meta.setColumnType(3, Types.VARCHAR);
-//        meta.setColumnDisplaySize(3, 32);
-//        
-//        meta.setColumnName(4, "xIncentve");
-//        meta.setColumnLabel(4, "xIncentve");
-//        meta.setColumnType(4, Types.VARCHAR);
-//        meta.setColumnDisplaySize(4, 32);
-//        
-//        meta.setColumnName(5, "xInctvPrc");
-//        meta.setColumnLabel(5, "xInctvPrc");
-//        meta.setColumnType(5, Types.DOUBLE);
-//
-//        meta.setColumnName(6, "xDeductnx");
-//        meta.setColumnLabel(6, "xDeductnx");
-//        meta.setColumnType(6, Types.VARCHAR);
-//        meta.setColumnDisplaySize(6, 32);
-//
-//        meta.setColumnName(7, "xDedctPrc");
-//        meta.setColumnLabel(7, "xDedctPrc");
-//        meta.setColumnType(7, Types.DOUBLE);
-//        
-//        meta.setColumnName(8, "sInctveDs");
-//        meta.setColumnLabel(8, "sInctveDs");
-//        meta.setColumnType(8, Types.VARCHAR);
-//
-//        meta.setColumnName(9, "xEmployNm");
-//        meta.setColumnLabel(9, "xEmployNm");
-//        meta.setColumnType(9, Types.VARCHAR);
-//        
-//        meta.setColumnName(10, "xPositnNm");
-//        meta.setColumnLabel(10, "xPositnNm");
-//        meta.setColumnType(10, Types.VARCHAR);
-//        
-//        meta.setColumnName(11, "xBranchNm");
-//        meta.setColumnLabel(11, "xBranchNm");
-//        meta.setColumnType(11, Types.VARCHAR);
-//        
-//        meta.setColumnName(12, "sMonthxxx");
-//        meta.setColumnLabel(12, "sMonthxxx");
-//        meta.setColumnType(12, Types.VARCHAR);
-//        
-//        meta.setColumnName(13, "sRemarksx");
-//        meta.setColumnLabel(13, "sRemarksx");
-//        meta.setColumnType(13, Types.VARCHAR);
-//        
-//        meta.setColumnName(14, "cTranStat");
-//        meta.setColumnLabel(14, "cTranStat");
-//        meta.setColumnType(14, Types.CHAR);
-//        meta.setColumnDisplaySize(14, 1);
-//        
-//        meta.setColumnName(15, "xInctvAmt");
-//        meta.setColumnLabel(15, "xInctvAmt");
-//        meta.setColumnType(15, Types.VARCHAR);
-//        meta.setColumnDisplaySize(15, 32);
-//        
-//        meta.setColumnName(16, "xDedctAmt");
-//        meta.setColumnLabel(16, "xDedctAmt");
-//        meta.setColumnType(16, Types.VARCHAR);
-//        meta.setColumnDisplaySize(16, 32);
-//        
-//        meta.setColumnName(17, "xByPercnt");
-//        meta.setColumnLabel(17, "xByPercnt");
-//        meta.setColumnType(17, Types.VARCHAR);
-//        
-//        
-//        p_oDetailCateg = new CachedRowSetImpl();
-//        p_oDetailCateg.setMetaData(meta); 
-//    }
-    private void createDetailCategory() throws SQLException{
-        RowSetMetaData meta = new RowSetMetaDataImpl();        
-
-        meta.setColumnCount(17);
-        
-        meta.setColumnName(1, "sTransNox");
-        meta.setColumnLabel(1, "sTransNox");
-        meta.setColumnType(1, Types.VARCHAR);
-        meta.setColumnDisplaySize(1, 12);
-        
-        meta.setColumnName(2, "sEmployID");
-        meta.setColumnLabel(2, "sEmployID");
-        meta.setColumnType(2, Types.VARCHAR);
-        meta.setColumnDisplaySize(2, 12);
-        
-        meta.setColumnName(3, "xBranchNm");
-        meta.setColumnLabel(3, "xBranchNm");
-        meta.setColumnType(3, Types.VARCHAR);
-        
-        meta.setColumnName(4, "xEmployNm");
-        meta.setColumnLabel(4, "xEmployNm");
-        meta.setColumnType(4, Types.VARCHAR);
-        
-        meta.setColumnName(5, "sInctveDs");
-        meta.setColumnLabel(5, "sInctveDs");
-        meta.setColumnType(5, Types.VARCHAR);
-
-        meta.setColumnName(6, "xIncentve");
-        meta.setColumnLabel(6, "xIncentve");
-        meta.setColumnType(6, Types.VARCHAR);
-        meta.setColumnDisplaySize(6, 32);
-
-        meta.setColumnName(7, "xInctvPrc");
-        meta.setColumnLabel(7, "xInctvPrc");
-        meta.setColumnType(7, Types.DOUBLE);
-        
-        meta.setColumnName(8, "xInctvAmt");
-        meta.setColumnLabel(8, "xInctvAmt");
-        meta.setColumnDisplaySize(6, 32);
-
-        meta.setColumnName(9, "xPositnNm");
-        meta.setColumnLabel(9, "xPositnNm");
-        meta.setColumnType(9, Types.VARCHAR);
-        
-        meta.setColumnName(10, "sMonthxxx");
-        meta.setColumnLabel(10, "sMonthxxx");
-        meta.setColumnType(10, Types.VARCHAR);
-        
-        meta.setColumnName(11, "nMcSalesx");
-        meta.setColumnLabel(11, "nMcSalesx");
-        meta.setColumnType(11, Types.VARCHAR);
-        
-        meta.setColumnName(12, "nSpareprt");
-        meta.setColumnLabel(12, "nSpareprt");
-        meta.setColumnType(12, Types.VARCHAR);
-        meta.setColumnDisplaySize(12, 32);
-        
-        meta.setColumnName(13, "nServicex");
-        meta.setColumnLabel(13, "nServicex");
-        meta.setColumnType(13, Types.VARCHAR);
-        meta.setColumnDisplaySize(13, 32);
-        
-        meta.setColumnName(14, "nRegisTri");
-        meta.setColumnLabel(14, "nRegisTri");
-        meta.setColumnType(14, Types.VARCHAR);
-        meta.setColumnDisplaySize(14, 32);
-        
-        meta.setColumnName(15, "nDei2xxxx");
-        meta.setColumnLabel(15, "nDei2xxxx");
-        meta.setColumnType(15, Types.VARCHAR);
-        meta.setColumnDisplaySize(15, 32);
-        
-        meta.setColumnName(16, "sInctveCD");
-        meta.setColumnLabel(16, "sInctveCD");
-        meta.setColumnType(16, Types.VARCHAR);
-        meta.setColumnDisplaySize(16, 3);
-        
-        meta.setColumnName(17, "xDeductnx");
-        meta.setColumnLabel(17, "xDeductnx");
-        meta.setColumnType(17, Types.VARCHAR);
-        meta.setColumnDisplaySize(17, 32);
-        
-        
-        p_oDetailCateg = new CachedRowSetImpl();
-        p_oDetailCateg.setMetaData(meta); 
-    }
+//  
     private void createBranch() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();
 
@@ -2628,45 +2673,63 @@ public class IncentiveReportss {
         return lsSQL;
     }
      private String getSQ_EmployeeDetail(){
-        String lsSQL = "";
-        lsSQL = "SELECT   b.sTransNox, " +
-                "  b.sEmployID, " +
-                "  IFNULL(i.sBranchNm,'')    xBranchNm, " +
-                "  IFNULL(g.sCompnyNm,'')    xEmployNm, " +
-                "  IFNULL(e.sInctveDs,'')    sInctveDs, " +
-                "  GROUP_CONCAT(IFNULL(c.nAllcAmtx,'') SEPARATOR '/') xIncentve, " +
-                "  GROUP_CONCAT(IFNULL(c.nAllcPerc,'') SEPARATOR '/') xInctvPrc, " +
-                "  GROUP_CONCAT(IFNULL(d.nInctvAmt,'') SEPARATOR '/') xInctvAmt, " +
-                "  IFNULL(h.sPositnNm,'')    xPositnNm, " +
-                "  IFNULL(a.sMonthxxx,'')    sMonthxxx, " +
-                "  0.0 nMcSalesx, " +
-                "  0.0 nSpareprt, " +
-                "  0.0 nServicex, " +
-                "  0.0 nRegisTri, " +
-                "  0.0 nDei2xxxx, " +
-                "  0.0 xDeductnx, " +
-                "  GROUP_CONCAT(IFNULL(e.sInctveCD,'') SEPARATOR '/') sInctveCD " +
-                "FROM Incentive_Master a " +
-                "  LEFT JOIN Incentive_Detail b " +
-                "    ON a.sTransNox = b.sTransNox " +
-                "  LEFT JOIN Incentive_Detail_Allocation_Employee c " +
-                "    ON b.sTransNox = c.sTransNox " +
-                "      AND b.sEmployID = c.sEmployID " +
-                "  LEFT JOIN Incentive_Detail_Allocation d " +
-                "    ON c.sTransNox = d.sTransNox " +
-                "      AND c.sInctveCD = d.sInctveCD " +
-                "  LEFT JOIN Incentive e " +
-                "    ON c.sInctveCD = e.sInctveCD " +
-                "  LEFT JOIN Employee_Master001 f " +
-                "    ON b.sEmployID = f.sEmployID " +
-                "  LEFT JOIN Client_Master g " +
-                "    ON f.sEmployID = g.sClientID " +
-                "  LEFT JOIN `Position` h " +
-                "    ON f.sPositnID = h.sPositnID " +
-                "  LEFT JOIN Branch i " +
-                "    ON LEFT(a.sTransNox,4) = i.sBranchCd  " +
-                "WHERE " + lsCondition();
-        return lsSQL;
+        String lsSQL = "SELECT" +
+                            "  a.sTransNox" +
+                            ", b.sEmployID" +
+                            ", IFNULL(l.sBranchNm, '') xBranchNm" +
+                            ", IFNULL(j.sCompnyNm, '') xEmployNm" +
+                            ", IFNULL(k.sPositnNm, '') xPositnNm" +
+                            ", a.sMonthxxx" +
+                            ", IFNULL(m.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299') xMCSalesx" +
+                            ", IFNULL(n.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299') xSPSalesx" +
+                            ", IFNULL(o.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299') xServicex" +
+                            ", IFNULL(p.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299') xLTOPoolx" +
+                            ", IFNULL(q.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299') xDEI2xxxx" +
+                            ", IFNULL(r.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299') xCollectn" +
+                            ", '1B09259D73D06C95C457CB3A89B03299' xDeductnx" +
+                            ", IFNULL(c.nAllcPerc, '1B09259D73D06C95C457CB3A89B03299') pMCSalesx" +
+                            ", IFNULL(c.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299') aMCSalesx" +
+                            ", IFNULL(d.nAllcPerc, '1B09259D73D06C95C457CB3A89B03299') pSPSalesx" +
+                            ", IFNULL(d.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299') aSPSalesx" + 
+                            ", IFNULL(e.nAllcPerc, '1B09259D73D06C95C457CB3A89B03299') pServicex" +
+                            ", IFNULL(e.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299') aServicex" + 
+                            ", IFNULL(f.nAllcPerc, '1B09259D73D06C95C457CB3A89B03299') pLTOPoolx" +
+                            ", IFNULL(f.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299') aLTOPoolx" + 
+                            ", IFNULL(g.nAllcPerc, '1B09259D73D06C95C457CB3A89B03299') pDEI2xxxx" +
+                            ", IFNULL(g.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299') aDEI2xxxx" + 
+                            ", IFNULL(h.nAllcPerc, '1B09259D73D06C95C457CB3A89B03299') pCollectn" +
+                            ", IFNULL(h.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299') aCollectn" +
+                        " FROM Incentive_Master a" +
+                            ", Incentive_Detail b" +
+                                " LEFT JOIN Incentive_Detail_Allocation_Employee c" + 
+                                    " LEFT JOIN Incentive_Detail_Allocation m ON c.sTransNox = m.sTransNox AND c.sInctveCD = m.sInctveCD" +
+                                " ON b.sTransNox = c.sTransNox AND b.sEmployID = c.sEmployID AND c.sInctveCD = '001'" +
+                                " LEFT JOIN Incentive_Detail_Allocation_Employee d" + 
+                                    " LEFT JOIN Incentive_Detail_Allocation n ON d.sTransNox = n.sTransNox AND d.sInctveCD = n.sInctveCD" +
+                                " ON b.sTransNox = d.sTransNox AND b.sEmployID = d.sEmployID AND d.sInctveCD = '002'" +
+                                " LEFT JOIN Incentive_Detail_Allocation_Employee e" +
+                                    " LEFT JOIN Incentive_Detail_Allocation o ON e.sTransNox = o.sTransNox AND e.sInctveCD = o.sInctveCD" +
+                                " ON b.sTransNox = e.sTransNox AND b.sEmployID = e.sEmployID AND e.sInctveCD = '003'" +
+                                " LEFT JOIN Incentive_Detail_Allocation_Employee f" + 
+                                    " LEFT JOIN Incentive_Detail_Allocation p ON f.sTransNox = p.sTransNox AND f.sInctveCD = p.sInctveCD" +
+                                " ON b.sTransNox = f.sTransNox AND b.sEmployID = f.sEmployID AND f.sInctveCD = '004'" +
+                                " LEFT JOIN Incentive_Detail_Allocation_Employee g" + 
+                                    " LEFT JOIN Incentive_Detail_Allocation q ON g.sTransNox = q.sTransNox AND g.sInctveCD = q.sInctveCD" +
+                                " ON b.sTransNox = g.sTransNox AND b.sEmployID = g.sEmployID AND g.sInctveCD = '005'" +
+                                " LEFT JOIN Incentive_Detail_Allocation_Employee h" +
+                                    " LEFT JOIN Incentive_Detail_Allocation r ON h.sTransNox = r.sTransNox AND h.sInctveCD = r.sInctveCD" +
+                                " ON b.sTransNox = h.sTransNox AND b.sEmployID = h.sEmployID AND h.sInctveCD = '006'" +
+                            ", Employee_Master001 i" +  
+                                " LEFT JOIN Client_Master j" + 
+                                    " ON i.sEmployID = j.sClientID" + 
+                                " LEFT JOIN `Position` k" + 
+                                    " ON i.sPositnID = k.sPositnID" + 
+                                " LEFT JOIN Branch l" +
+                                    " ON i.sBranchCd = l.sBranchCd" +
+                        " WHERE a.sTransNox = b.sTransNox" + 
+                            " AND b.sEmployID = i.sEmployID";
+        
+        return MiscUtil.addCondition(lsSQL, lsCondition());
     }
     private String getSQ_MasterDetail(){
         return "SELECT" +
