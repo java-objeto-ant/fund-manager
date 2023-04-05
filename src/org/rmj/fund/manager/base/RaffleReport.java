@@ -200,8 +200,16 @@ public class RaffleReport {
                    " IFNULL(b.sCompnyNm, CONCAT(b.sLastName, ', ', b.sFrstName, ' ', IFNULL(b.sSuffixNm, ''), ' ', b.sMiddName)) xCompnyNm" +
                    ", c.sBranchNm " +
                    ", b.sMobileNo " +
+                   ", TRIM(CONCAT(IFNULL(b.sHouseNox,''),' ',IFNULL(b.sAddressx,''),' ',IFNULL(f.sBrgyName,''),', ',IFNULL(d.sTownName,''),', ',IFNULL(e.sProvName,''))) sAddressx " +
                 " FROM MC_AR_Master a" +
                    ", Client_Master b" +
+                   "    LEFT JOIN TownCity d" +
+                   "        ON b.sTownIDxx = d.sTownIDxx " +
+                   "    LEFT JOIN Province e" +
+                   "        ON d.sProvIDxx = e.sProvIDxx " +
+                   "    LEFT JOIN Barangay f" +
+                   "        ON b.sTownIDxx = f.sTownIDxx " +
+                        "        AND b.sBrgyIDxx = f.sBrgyIDxx " +
                    ", Branch c" +
                 " WHERE a.sClientID = b.sClientID" +
                    " AND a.sBranchCd = c.sBranchCd" +
@@ -211,14 +219,22 @@ public class RaffleReport {
                    " IFNULL(b.sCompnyNm, CONCAT(b.sLastName, ', ', b.sFrstName, ' ', IFNULL(b.sSuffixNm, ''), ' ', b.sMiddName)) xCompnyNm" +
                    ", c.sBranchNm " +
                    ", b.sMobileNo " +
+                   ", TRIM(CONCAT(IFNULL(b.sHouseNox,''),' ',IFNULL(b.sAddressx,''),' ',IFNULL(f.sBrgyName,''),', ',IFNULL(d.sTownName,''),', ',IFNULL(e.sProvName,''))) sAddressx " +
                 " FROM Client_Master b" +
+                   "    LEFT JOIN TownCity d" +
+                   "        ON b.sTownIDxx = d.sTownIDxx " +
+                   "    LEFT JOIN Province e" +
+                   "        ON d.sProvIDxx = e.sProvIDxx " +
+                   "    LEFT JOIN Barangay f" +
+                   "        ON b.sTownIDxx = f.sTownIDxx " +
+                        "        AND b.sBrgyIDxx = f.sBrgyIDxx " +
                 " , Branch c" +
                 " WHERE b.sClientID = " + SQLUtil.toSQL(p_oRecord.getString("sAcctNmbr"));
             }
-             System.out.println(lsSQL);
              loRS = p_oApp.executeQuery(lsSQL);    
              if(loRS.next()){
-                 
+                 System.out.println(p_oRecord.getString("cGroupNox"));
+                p_oRecord.updateString("xAddressx", loRS.getString("sAddressx"));
                 p_oRecord.updateString("sCompanyNm", loRS.getString("xCompnyNm"));
                 p_oRecord.updateString("sBranchNme", loRS.getString("sBranchNm"));
                 p_oRecord.updateString("sMobileNox", loRS.getString("sMobileNo"));
@@ -227,7 +243,7 @@ public class RaffleReport {
              MiscUtil.close(loRS);
         }
         displayDetFields();
-    }
+    } 
 //    private void createDetail() throws SQLException{
 //        RowSetMetaData meta = new RowSetMetaDataImpl();        
 //
@@ -287,10 +303,12 @@ public class RaffleReport {
                 ", '' sCompanyNm " +
                 ", '' sBranchNme " +
                 ", '' sMobileNox " +
+                ", '' xAddressx " +
                 ", a.sRaffleNo " +
                 ", c.nAmountxx " +
                 ", c.nItemQtyx " +
                 ", d.sPanaloDs " +
+                ", CEIL((ROW_NUMBER() OVER())/3) AS cGroupNox " +
                 " FROM RaffleWinners a"+
                 " , ILMJ_Master b " +
                 "     LEFT JOIN ILMJ_Detail c " +
@@ -298,6 +316,7 @@ public class RaffleReport {
                 "     LEFT JOIN Panalo_Info d " +
                 "       ON c.sPanaloCd = d.sPanaloCD ";
         lsSQL = MiscUtil.addCondition(lsSQL, lsCondition());
+        
         return lsSQL;
     }
     private String getSQL_ILMJMaster(){

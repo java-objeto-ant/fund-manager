@@ -39,7 +39,6 @@ public class RaffleReports {
         
         trans = new RaffleReport(instance, instance.getBranchCode(), false);
         trans.setWithUI(false);
-        trans.setTranStat(10);
     }
     
     @AfterClass
@@ -47,11 +46,14 @@ public class RaffleReports {
     }
 
     @Test
-    public void test01SearchRecord() {
+    public void test01SearchALLRecord() {
         try {
+            trans.setTranStat(10);
             if (trans.SearchRecord("M00123000002", true)){
                 
+                    System.out.println("---------- START ALL RECORD ----------");
                 for (int lnCtr = 1; lnCtr <= trans.getItemCount(); lnCtr++){
+                    System.out.println();
                     System.out.println(trans.getRecord(lnCtr,"sAcctNmbr"));
                     System.out.println(trans.getRecord(lnCtr,"sSourceCd"));
                     System.out.println(trans.getRecord(lnCtr,"sCompanyNm"));
@@ -60,6 +62,60 @@ public class RaffleReports {
                     System.out.println(trans.getRecord(lnCtr,"sPanaloDs"));
                     System.out.println(StringHelper.prepad((String) trans.getRecord(lnCtr,"sRaffleNo"), 6, '0'));
                 }
+                    System.out.println("---------- END ALL RECORD ----------");
+            } else {
+                fail(trans.getMessage());
+            }
+        } catch (SQLException e) {
+            fail(e.getMessage());
+        }   
+    }
+
+
+    @Test
+    public void test02SearchWinnerRecord() {
+        try {
+            trans.setTranStat(1);
+            if (trans.SearchRecord("M00123000002", true)){
+                
+                    System.out.println("---------- START WINNER RECORD ----------");
+                for (int lnCtr = 1; lnCtr <= trans.getItemCount(); lnCtr++){
+                    System.out.println();
+                    System.out.println(trans.getRecord(lnCtr,"sAcctNmbr"));
+                    System.out.println(trans.getRecord(lnCtr,"sSourceCd"));
+                    System.out.println(trans.getRecord(lnCtr,"sCompanyNm"));
+                    System.out.println(trans.getRecord(lnCtr,"sBranchNme"));
+                    System.out.println(trans.getRecord(lnCtr,"sMobileNox"));
+                    System.out.println(trans.getRecord(lnCtr,"sPanaloDs"));
+                    System.out.println(StringHelper.prepad((String) trans.getRecord(lnCtr,"sRaffleNo"), 6, '0'));
+                }
+                    System.out.println("---------- END WINNER RECORD ----------");
+            } else {
+                fail(trans.getMessage());
+            }
+        } catch (SQLException e) {
+            fail(e.getMessage());
+        }   
+    }
+
+    @Test
+    public void test03SearchNonWinnerRecord() {
+        try {
+            trans.setTranStat(0);
+            if (trans.SearchRecord("M00123000002", true)){
+                
+                    System.out.println("---------- START NON-WINNER RECORD ----------");
+                for (int lnCtr = 1; lnCtr <= trans.getItemCount(); lnCtr++){
+                    System.out.println();
+                    System.out.println(trans.getRecord(lnCtr,"sAcctNmbr"));
+                    System.out.println(trans.getRecord(lnCtr,"sSourceCd"));
+                    System.out.println(trans.getRecord(lnCtr,"sCompanyNm"));
+                    System.out.println(trans.getRecord(lnCtr,"sBranchNme"));
+                    System.out.println(trans.getRecord(lnCtr,"sMobileNox"));
+                    System.out.println(trans.getRecord(lnCtr,"sPanaloDs"));
+                    System.out.println(StringHelper.prepad((String) trans.getRecord(lnCtr,"sRaffleNo"), 6, '0'));
+                }
+                    System.out.println("---------- END NON-WINNER RECORD ----------");
             } else {
                 fail(trans.getMessage());
             }
