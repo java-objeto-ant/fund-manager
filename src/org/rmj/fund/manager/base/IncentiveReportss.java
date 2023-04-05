@@ -135,11 +135,14 @@ public class IncentiveReportss {
             lsCondition1 = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
         }
         
-//        if(p_oBranch != null){
-////            lsCondition = lsCondition + " AND f.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
+        if(p_oBranch != null){
+//            lsCondition = lsCondition + " AND f.sBranchCD = " +  SQLUtil.toSQL(getBranch("sBranchCd"));
 //            lsCondition =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
 //            lsCondition1 =" AND  LEFT(a.sTransNox, 4) = LEFT(b.sEmployID, 4)";
-//        }
+
+            lsCondition = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
+            lsCondition1 = " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
+        }
         
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
@@ -154,7 +157,7 @@ public class IncentiveReportss {
         MiscUtil.close(loRS);
         computeEmpTotalIncentiveAmount();
         
-        lsCondition1 =  lsCondition1 + " GROUP BY b.sEmployID,a.sMonthxxx";
+        lsCondition1 =  lsCondition1 + " GROUP BY b.sEmployID";
         lsSQL = getSQ_Detail() + lsCondition1 ;
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
@@ -220,6 +223,10 @@ public class IncentiveReportss {
         RowSetFactory factory = RowSetProvider.newFactory();
         String lsCondition = "";
          
+        if(p_oBranch != null){
+            lsCondition = lsCondition + " AND a.sTransNox LIKE " + SQLUtil.toSQL(getBranch("sBranchCd") + "%");
+        }
+        
         if(!fsValue.isEmpty()){
            lsCondition =  lsCondition + " AND a.sMonthxxx = " +SQLUtil.toSQL(fsValue);
         }
