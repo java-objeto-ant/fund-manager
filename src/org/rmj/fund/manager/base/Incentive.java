@@ -16,6 +16,7 @@ import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.StringUtil;
+import org.rmj.appdriver.agentfx.ShowMessageFX;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 import org.rmj.appdriver.constants.TransactionStatus;
@@ -116,10 +117,10 @@ public class Incentive {
             }
         } 
         
-        if (p_oApp.getUserLevel() < UserRight.AUDIT){
-            p_sMessage = "Your account level is not authorized to use this transaction.";
-            return false;
-        }
+//        if (p_oApp.getUserLevel() < UserRight.AUDIT){
+//            p_sMessage = "Your account level is not authorized to use this transaction.";
+//            return false;
+//        }
         p_sMessage = "";
         
         createMaster();
@@ -196,10 +197,15 @@ public class Incentive {
                 p_oAllctn.updateRow();
                 
                 lsSQL = MiscUtil.rowset2SQL(p_oAllctn, "Incentive_Detail_Allocation", "xInctvNme;xByPercnt");
-                
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
-                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    System.out.println("getMessage = " +  p_oApp.getMessage());
+                    System.out.println("getErrMsg = "  + p_oApp.getErrMsg());
+                    if(p_oApp.getErrMsg().contains("Data truncation")){
+                        p_sMessage = "Please check entry for Quantity Goal or Actual Goal!";
+                    }else{
+                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    }
                     return false;
                 }
             }
@@ -557,6 +563,11 @@ public class Incentive {
             p_sMessage = "Application driver is not set.";
             return false;
         }
+        if (p_nEditMode != EditMode.ADDNEW) {
+            p_sMessage = "This feature was only for new entries.";
+            return false;
+        }
+        
         
         p_sMessage = "";
         
@@ -723,6 +734,23 @@ public class Incentive {
             return false;
         }
         
+        if (((String) getMaster("cTranStat")).equals("0")){
+            if (p_oApp.getDepartment().equals(AUDITOR)){
+                p_sMessage = "Unable to approve unconfirmed transactions.";
+                return false;
+            }
+        }
+        
+       
+//        if (((String) getMaster("cTranStat")).equals("0") || 
+//                ((String) getMaster("cTranStat")).equals("1") ){
+//            if (System.getProperty(REQUIRE_CM).equals("1")){
+//                if (((String) getMaster("cApprovd2")).equals("0")){
+//                    return ApprovedTransactionCM();
+//                }
+//            }
+//        }
+//        
         if (((String) getMaster("cTranStat")).equals("2")){
             p_sMessage = "Unable to confirm posted transactions.";
             return false;
@@ -1179,8 +1207,9 @@ public class Incentive {
         int lnRow = getIncentiveEmployeeAllocationCount();
         
         for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+             p_oAllctn_Emp.absolute(lnCtr);
             if (fsInctveCD.equals(p_oAllctn_Emp.getString("sInctveCD"))){
-                p_oAllctn_Emp.absolute(lnCtr);
+               
                 p_oAllctn_Emp.updateDouble("nAllcPerc", 0.00);
                 p_oAllctn_Emp.updateString("nAllcAmtx", EncryptAmount(0.00));
                 p_oAllctn_Emp.updateRow();
@@ -1242,9 +1271,10 @@ public class Incentive {
                         }                 
                         break;
                     case "nAllcAmtx":
+                        System.out.println(p_oAllctn.getString("xByPercnt"));
                         if (p_oAllctn.getString("xByPercnt").equals("0") ||
                             p_oAllctn.getString("xByPercnt").equals("2")){
-                            
+                            System.out.println(foValue);
                             if (StringUtil.isNumeric(String.valueOf(foValue))) 
                                 p_oAllctn_Emp.updateString(fsIndex, EncryptAmount((double) foValue));
                             else
@@ -2540,6 +2570,23 @@ public class Incentive {
         
         //validate deductions
         if (getDeductionCount() > 0){
+            // validate if deduction amount allocated
+            if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){          
+                System.out.println("department  = " + p_oApp.getDepartment());
+                if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+                    if (p_oApp.getDepartment().equals(AUDITOR)){
+                        for(int lnctr = 1; lnctr <= getDeductionCount(); lnctr++){
+                            double totlAmt = Double.parseDouble(getDeductionInfo(lnctr, 102).toString());
+                            double dedAmnt = Double.parseDouble(getDeductionInfo(lnctr, "nDedctAmt").toString());
+                            if(totlAmt != dedAmnt || totlAmt > dedAmnt){
+                                p_sMessage = "Please allocate all deduction amount!";
+                                return false;
+                            }
+                        }
+
+                    }
+                }
+            }
             //validate employee incentive allocation
             if (getDeductionEmployeeAllocationCount()== 0){
                 p_sMessage = "No deduction allocation for employees.";
