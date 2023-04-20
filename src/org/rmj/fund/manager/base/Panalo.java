@@ -630,7 +630,7 @@ public class Panalo {
                     ", IFNULL(a.dApproved, '') dApproved" +	
                     ", a.cSendStat cSendStat" +
                     ", a.cTranStat cTranStat" +
-                    ", a.sModifiedsModified" +	
+                    ", a.sModified sModified" +	
                     ", a.dModified dModified" +
                     ", IFNULL(c.sDescript, '') sDescript" +
                 " FROM " + REDEEM_TABLE + " a " +
