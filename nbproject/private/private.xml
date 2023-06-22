@@ -5,7 +5,12 @@
         <group name="guanzon"/>
         <group name="LOCAL"/>
         <group>
+            <file>file:/C:/Users/User/OneDrive/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/MCImages.java</file>
+            <file>file:/C:/Users/User/OneDrive/Documents/GitHub/fund-manager/test/base/MCImage.java</file>
+            <file>file:/C:/Users/User/OneDrive/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/MCImage.java</file>
+            <file>file:/C:/Users/User/OneDrive/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/IncentiveRelease.java</file>
             <file>file:/C:/Users/User/OneDrive/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/Incentive.java</file>
+            <file>file:/C:/Users/User/OneDrive/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/DeptIncentive.java</file>
         </group>
     </open-files>
 </project-private>
