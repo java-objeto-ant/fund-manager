@@ -138,12 +138,87 @@ public class PanaloRedemptionReport {
         p_oRecord = factory.createCachedRowSet();
         p_oRecord.populate(loRS);
         MiscUtil.close(loRS);
-        
+        setRaffleNames();
         p_nEditMode = EditMode.READY;
         return true;
     }
     
+    private void setRaffleNames() throws SQLException{
+        int lnCtr;
+        for(lnCtr = 1; lnCtr <= getItemCount(); lnCtr++){
+            
+            p_oRecord.absolute(lnCtr);
+            String lsSQL;
+            ResultSet loRS;
+            if(p_oRecord.getString("sAcctNmbr").length() == 10){
+                 lsSQL = "SELECT" +
+                   " IFNULL(b.sCompnyNm, CONCAT(b.sLastName, ', ', b.sFrstName, ' ', IFNULL(b.sSuffixNm, ''), ' ', b.sMiddName)) xCompnyNm" +
+                   ", c.sBranchNm " +
+                   ", b.sMobileNo " +
+                   ", TRIM(CONCAT(IFNULL(b.sHouseNox,''),' ',IFNULL(b.sAddressx,''),' ',IFNULL(f.sBrgyName,''),', ',IFNULL(d.sTownName,''),', ',IFNULL(e.sProvName,''))) sAddressx " +
+                " FROM MC_AR_Master a" +
+                   ", Client_Master b" +
+                   "    LEFT JOIN TownCity d" +
+                   "        ON b.sTownIDxx = d.sTownIDxx " +
+                   "    LEFT JOIN Province e" +
+                   "        ON d.sProvIDxx = e.sProvIDxx " +
+                   "    LEFT JOIN Barangay f" +
+                   "        ON b.sTownIDxx = f.sTownIDxx " +
+                        "        AND b.sBrgyIDxx = f.sBrgyIDxx " +
+                   ", Branch c" +
+                " WHERE a.sClientID = b.sClientID" +
+                   " AND a.sBranchCd = c.sBranchCd" +
+                   " AND a.sAcctNmbr = " + SQLUtil.toSQL(p_oRecord.getString("sAcctNmbr"));
+            }else{
+                lsSQL = "SELECT" +
+                   " IFNULL(b.sCompnyNm, CONCAT(b.sLastName, ', ', b.sFrstName, ' ', IFNULL(b.sSuffixNm, ''), ' ', b.sMiddName)) xCompnyNm" +
+                   ", c.sBranchNm " +
+                   ", b.sMobileNo " +
+                   ", TRIM(CONCAT(IFNULL(b.sHouseNox,''),' ',IFNULL(b.sAddressx,''),' ',IFNULL(f.sBrgyName,''),', ',IFNULL(d.sTownName,''),', ',IFNULL(e.sProvName,''))) sAddressx " +
+                " FROM Client_Master b" +
+                   "    LEFT JOIN Employee_Master001 a " +
+                   "        ON b.sClientID = a.sEmployID " +
+                   "    LEFT JOIN TownCity d" +
+                   "        ON b.sTownIDxx = d.sTownIDxx " +
+                   "    LEFT JOIN Province e" +
+                   "        ON d.sProvIDxx = e.sProvIDxx " +
+                   "    LEFT JOIN Barangay f" +
+                   "        ON b.sTownIDxx = f.sTownIDxx " +
+                        "        AND b.sBrgyIDxx = f.sBrgyIDxx " +
+                " , Branch c" +
+                " WHERE a.sBranchCd = c.sBranchCd AND b.sClientID = " + SQLUtil.toSQL(p_oRecord.getString("sAcctNmbr"));
+            }
+             loRS = p_oApp.executeQuery(lsSQL); 
+             System.out.println(lsSQL);
+             if(loRS.next()){
+//                 System.out.println(p_oRecord.getString("cGroupNox"));
+                p_oRecord.updateString("sCompanyNm", loRS.getString("xCompnyNm"));
+                p_oRecord.updateString("sBranchNme", loRS.getString("sBranchNm"));
+                p_oRecord.updateRow();
+             }
+             MiscUtil.close(loRS);
+        }
+    } 
   
+    
+    public int getItemCount() throws SQLException{
+        if(p_oRecord == null) return 0;
+        p_oRecord.last();
+        return p_oRecord.getRow();
+    }
+    
+    public Object getRecord(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        if (getItemCount() == 0 || fnRow > getItemCount()) return null;
+        
+        p_oRecord.absolute(fnRow);
+        return p_oRecord.getObject(fnIndex);
+        
+    }
+    
+    public Object getRecord(int fnRow, String fsIndex) throws SQLException{
+        return getRecord(fnRow, getColumnIndex(p_oRecord, fsIndex));
+    }
     
     public Object getMaster(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -196,7 +271,19 @@ public class PanaloRedemptionReport {
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
     }
-    
+    private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
+        int lnIndex = 0;
+        int lnRow = loRS.getMetaData().getColumnCount();
+        
+        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+            if (fsValue.equals(loRS.getMetaData().getColumnLabel(lnCtr))){
+                lnIndex = lnCtr;
+                break;
+            }
+        }
+        
+        return lnIndex;
+    }
     private int getColumnIndex(String fsValue) throws SQLException{
         int lnIndex = 0;
         int lnRow = p_oRecord.getMetaData().getColumnCount();
@@ -219,5 +306,32 @@ public class PanaloRedemptionReport {
                     ", sModified" +	
                     ", dModified" +
                 " FROM " + MASTER_TABLE;
+    }
+   
+    public String getSQ_Redeem(){
+        String lsSQL;
+        
+        lsSQL = "SELECT " +
+                    "  a.sTransNox sTransNox" +
+                    ", a.dRedeemxx dRedeemxx" +	
+                    ", a.sDeviceID sDeviceID" +
+                    ", IFNULL(c.sPartsIDx, '') sItemCode" +	
+                    ", IFNULL(a.nItemQtyx, 0) nItemQtyx" +
+                    ", IFNULL(a.sRemarksx, '') sRemarksx" +
+                    ", IFNULL(b.sClientID, '') sUserIDxx" +
+                    ", CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sUserName " +
+                    ", IFNULL(a.sApproved,'') sApproved" +
+                    ", IFNULL(a.dApproved, '') dApproved" +	
+                    ", a.cSendStat cSendStat" +
+                    ", a.cTranStat cTranStat" +
+                    ", a.sModified sModified" +	
+                    ", a.dModified dModified" +
+                    ", IFNULL(c.sDescript, '') sDescript" +
+                " FROM " + MASTER_TABLE + " a " +
+                    " LEFT JOIN Client_Master b " + 
+                        " ON a.sUserIDxx = b.sClientID "+
+                    " LEFT JOIN Spareparts c " + 
+                        " ON a.sItemCode = c.sPartsIDx ";
+        return lsSQL;
     }
 }
