@@ -77,20 +77,20 @@ public class PanaloRedemptionReport {
         
         p_sMessage = "";
         
-        String lsSQL = getSQ_Record();
+        String lsSQL = getSQ_Redeem();
         
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                 p_oApp, 
                                 lsSQL, 
                                 fsValue, 
-                                "Code»Description", 
-                                "sPanaloCD»sPanaloDs", 
-                                "sPanaloCD»sPanaloDs", 
+                                "TransNox»Date", 
+                                "sTransNox»dRedeemxx", 
+                                "a.sTransNox»a.dRedeemxx", 
                                 fbByCode ? 0 : 1);
             
             if (loJSON != null) 
-                return OpenRecord((String) loJSON.get("sPanaloCD"));
+                return OpenRecord((String) loJSON.get("sTransNox"));
             else {
                 p_sMessage = "No record selected.";
                 return false;
@@ -98,9 +98,9 @@ public class PanaloRedemptionReport {
         }
         
         if (fbByCode)
-            lsSQL = MiscUtil.addCondition(lsSQL, "sPanaloCD = " + SQLUtil.toSQL(fsValue));   
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));   
         else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sPanaloDs LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%")); 
             lsSQL += " LIMIT 1";
         }
         
@@ -112,7 +112,7 @@ public class PanaloRedemptionReport {
             return false;
         }
         
-        lsSQL = loRS.getString("sPanaloCD");
+        lsSQL = loRS.getString("sTransNox");
         MiscUtil.close(loRS);
         
         return OpenRecord(lsSQL);
@@ -133,7 +133,7 @@ public class PanaloRedemptionReport {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_Record(), "sPanaloCD= " + SQLUtil.toSQL(fsValue));
+        lsSQL = MiscUtil.addCondition(getSQ_Redeem(), "sTransNox= " + SQLUtil.toSQL(fsValue));
         loRS = p_oApp.executeQuery(lsSQL);
         p_oRecord = factory.createCachedRowSet();
         p_oRecord.populate(loRS);
@@ -150,7 +150,7 @@ public class PanaloRedemptionReport {
             p_oRecord.absolute(lnCtr);
             String lsSQL;
             ResultSet loRS;
-            if(p_oRecord.getString("sAcctNmbr").length() == 10){
+            if(p_oRecord.getString("sUserIDxx").length() == 10){
                  lsSQL = "SELECT" +
                    " IFNULL(b.sCompnyNm, CONCAT(b.sLastName, ', ', b.sFrstName, ' ', IFNULL(b.sSuffixNm, ''), ' ', b.sMiddName)) xCompnyNm" +
                    ", c.sBranchNm " +
@@ -168,7 +168,7 @@ public class PanaloRedemptionReport {
                    ", Branch c" +
                 " WHERE a.sClientID = b.sClientID" +
                    " AND a.sBranchCd = c.sBranchCd" +
-                   " AND a.sAcctNmbr = " + SQLUtil.toSQL(p_oRecord.getString("sAcctNmbr"));
+                   " AND a.sAcctNmbr = " + SQLUtil.toSQL(p_oRecord.getString("sUserIDxx"));
             }else{
                 lsSQL = "SELECT" +
                    " IFNULL(b.sCompnyNm, CONCAT(b.sLastName, ', ', b.sFrstName, ' ', IFNULL(b.sSuffixNm, ''), ' ', b.sMiddName)) xCompnyNm" +
@@ -186,7 +186,7 @@ public class PanaloRedemptionReport {
                    "        ON b.sTownIDxx = f.sTownIDxx " +
                         "        AND b.sBrgyIDxx = f.sBrgyIDxx " +
                 " , Branch c" +
-                " WHERE a.sBranchCd = c.sBranchCd AND b.sClientID = " + SQLUtil.toSQL(p_oRecord.getString("sAcctNmbr"));
+                " WHERE a.sBranchCd = c.sBranchCd AND b.sClientID = " + SQLUtil.toSQL(p_oRecord.getString("sUserIDxx"));
             }
              loRS = p_oApp.executeQuery(lsSQL); 
              System.out.println(lsSQL);
@@ -319,7 +319,7 @@ public class PanaloRedemptionReport {
                     ", IFNULL(a.nItemQtyx, 0) nItemQtyx" +
                     ", IFNULL(a.sRemarksx, '') sRemarksx" +
                     ", IFNULL(b.sClientID, '') sUserIDxx" +
-                    ", CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sUserName " +
+                    ", '' sUserName " +
                     ", IFNULL(a.sApproved,'') sApproved" +
                     ", IFNULL(a.dApproved, '') dApproved" +	
                     ", a.cSendStat cSendStat" +
@@ -328,8 +328,6 @@ public class PanaloRedemptionReport {
                     ", a.dModified dModified" +
                     ", IFNULL(c.sDescript, '') sDescript" +
                 " FROM " + MASTER_TABLE + " a " +
-                    " LEFT JOIN Client_Master b " + 
-                        " ON a.sUserIDxx = b.sClientID "+
                     " LEFT JOIN Spareparts c " + 
                         " ON a.sItemCode = c.sPartsIDx ";
         return lsSQL;

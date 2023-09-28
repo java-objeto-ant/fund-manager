@@ -1413,6 +1413,7 @@ public class Incentive {
             case 5://sRemarksx
             case 16://xBranchNm
             case 17://xDeptName
+            case 18://sBranchCd
                 p_oMaster.updateString(fnIndex, (String) foValue);
                 p_oMaster.updateRow();
 
@@ -1674,7 +1675,129 @@ public class Incentive {
         
         return true;
     }
-   
+//    public boolean searchBranch(String fsValue, boolean fbByCode) throws SQLException{
+//        if (p_nEditMode != EditMode.ADDNEW &&
+//            p_nEditMode != EditMode.UPDATE) return false;
+//        
+//        String lsSQL = "SELECT" +
+//                            "  sBranchCd" +
+//                            ", sBranchNm" +
+//                        " FROM Branch" +
+//                        " WHERE cRecdStat = '1'";
+//        
+//        JSONObject loJSON;
+//        
+//        if (p_bWithUI){
+//            loJSON = showFXDialog.jsonSearch(
+//                        p_oApp, 
+//                        lsSQL, 
+//                        fsValue, 
+//                        "Code»Branch", 
+//                        "sBranchCd»sBranchNm", 
+//                        "sBranchCd»sBranchNm", 
+//                        fbByCode ? 0 : 1);
+//            
+//            if (loJSON != null){
+////                p_oMaster.first();
+////                p_oMaster.updateString("xBranchNm", (String) loJSON.get("sBranchNm"));
+////                p_oMaster.updateRow();
+////                
+//                setMaster(16, (String) loJSON.get("sBranchNm"));            
+//
+//                if (p_oListener != null) p_oListener.MasterRetreive(16, getMaster("xBankName"));
+//                return true;
+//            } else 
+//                return false;
+//        }
+//        
+//        if (fbByCode)
+//            lsSQL = MiscUtil.addCondition(lsSQL, "sBranchCd = " + SQLUtil.toSQL(fsValue));
+//        else
+//            lsSQL = MiscUtil.addCondition(lsSQL, "sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+//        
+//        lsSQL += " LIMIT 1";
+//        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+//        
+//        JSONArray loArray = MiscUtil.RS2JSON(loRS);
+//        MiscUtil.close(loRS);
+//        
+//        if (loArray.isEmpty()) return false;
+//        
+//        loJSON = (JSONObject) loArray.get(0);
+//        
+//            if (loJSON != null){
+////                p_oMaster.first();
+////                p_oMaster.updateString("xBranchNm", (String) loJSON.get("sBranchNm"));
+////                p_oMaster.updateRow();
+//                
+//                setMaster(16, (String) loJSON.get("sBranchNm"));            
+//
+//                if (p_oListener != null) p_oListener.MasterRetreive(16, getMaster("xBankName"));
+//                return true;
+//            } else 
+//                return false;
+//    }
+    public boolean searchBranch(String fsValue, boolean fbByCode) throws SQLException{
+      
+        
+        String lsSQL = "SELECT" + 
+                    "  sBranchCd" +
+                    ", sBranchNm" +
+                " FROM Branch a" +
+                " WHERE cRecdStat = 1";
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBranchCd = " + SQLUtil.toSQL(fsValue));
+        else
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        
+      
+        JSONObject loJSON;
+        
+        if (p_bWithUI){
+            loJSON = showFXDialog.jsonSearch(
+                        p_oApp, 
+                        lsSQL, 
+                        fsValue, 
+                        "Code»Branch Name", 
+                        "sBranchCd»sBranchNm", 
+                        "sBranchCd»sBranchNm", 
+                        fbByCode ? 0 : 1);
+            
+            if (loJSON != null) {
+                setMaster(16,(String) loJSON.get("sBranchNm"));
+                setMaster(18,(String) loJSON.get("sBranchCd"));
+                if (p_oListener != null) p_oListener.MasterRetreive(16, getMaster(16));
+                return true;
+            }else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBranchCd = " + SQLUtil.toSQL(fsValue));
+        else
+            lsSQL = MiscUtil.addCondition(lsSQL, "sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        
+        lsSQL += " LIMIT 1";
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        JSONArray loArray = MiscUtil.RS2JSON(loRS);
+        MiscUtil.close(loRS);
+        
+        if (loArray.isEmpty()) return false;
+        
+        loJSON = (JSONObject) loArray.get(0);
+        
+            if (loJSON != null){
+                setMaster(16, (String) loJSON.get("sBranchNm"));  
+                setMaster(18,(String) loJSON.get("sBranchCd"));          
+
+                if (p_oListener != null) p_oListener.MasterRetreive(16, getMaster(16));
+                return true;
+            } else 
+                return false;
+    }
+    
     public String getMessage(){
         return p_sMessage;
     }
@@ -2393,7 +2516,7 @@ public class Incentive {
     private void createMaster() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();
 
-        meta.setColumnCount(17);
+        meta.setColumnCount(18);
 
         meta.setColumnName(1, "sTransNox");
         meta.setColumnLabel(1, "sTransNox");
@@ -2474,6 +2597,11 @@ public class Incentive {
         meta.setColumnLabel(17, "xDeptName");
         meta.setColumnType(17, Types.VARCHAR);
         
+        meta.setColumnName(18, "sBranchCd");
+        meta.setColumnLabel(18, "sBranchCd");
+        meta.setColumnType(18, Types.VARCHAR);
+        meta.setColumnDisplaySize(18, 4);
+        
         p_oMaster = new CachedRowSetImpl();
         p_oMaster.setMetaData(meta);
         
@@ -2488,6 +2616,7 @@ public class Incentive {
         p_oMaster.updateObject("cApprovd2", "0");
         p_oMaster.updateObject("cTranStat", TransactionStatus.STATE_OPEN);
         p_oMaster.updateObject("xBranchNm", p_oApp.getBranchName());
+        p_oMaster.updateObject("sBranchCd", p_oApp.getBranchCode());
         
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
@@ -2644,10 +2773,12 @@ public class Incentive {
                     ", a.cTranStat" +
                     ", c.sBranchNm xBranchNm" +
                     ", IFNULL(b.sDeptName, '') xDeptName" +
+                    ", a.sBranchCd" +
                 " FROM Incentive_Master a" +
                         " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
                     ", Branch c " +
                 " WHERE LEFT(a.sTransNox, 4) = c.sBranchCd" +
+                " OR a.sBranchCd = c.sBranchCd" +
                      lsCondition();
         
         return lsSQL;
