@@ -444,7 +444,7 @@ public class Incentive {
             lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%")); 
         }
         
-        System.out.println(lsSQL);
+        System.out.println("search = " + lsSQL);
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                 p_oApp, 
@@ -511,7 +511,8 @@ public class Incentive {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        lsSQL = getSQ_OpenMaster(" AND a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
@@ -2444,6 +2445,8 @@ public class Incentive {
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
         
+        String lsBranchCd = "";
+        
         String lsSQL = "SELECT " +
         "      a.sEmployID " +
         "    , IFNULL(b.sCompnyNm, '') xEmployNm " +
@@ -2456,8 +2459,8 @@ public class Incentive {
         "     LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
         "     LEFT JOIN Employee_Level c ON a.sEmpLevID = c.sEmpLevID " +
         "     LEFT JOIN `Position` d ON a.sPositnID = d.sPositnID " +
-        " WHERE a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
-        "     AND a.cRecdStat = '1' " +
+//        " WHERE a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
+        " WHERE  a.cRecdStat = '1' " +
         "     AND ISNULL(a.dFiredxxx) ";
       
         String lsSQL2 =   " UNION SELECT" +
@@ -2478,14 +2481,23 @@ public class Incentive {
         "     LEFT JOIN `Position` k ON h.sPositnID = k.sPositnID" +
         "	WHERE e.sBranchCd = f.sBranchCd" +
         "	AND  f.sAreaCode = g.sAreaCode" +
-        "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
+//        "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
         " ORDER BY xEmpLevID DESC, xEmployNm";   
         p_oMaster.first();
-        if (!p_oMaster.getString("sDeptIDxx").isEmpty())
+//        
+        if(!p_oMaster.getString("sBranchCd").isEmpty()){
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sBranchCd = " + SQLUtil.toSQL(p_oMaster.getString("sBranchCd")));
+            lsSQL2 = MiscUtil.addCondition(lsSQL2, "e.sBranchCd = " + SQLUtil.toSQL(p_oMaster.getString("sBranchCd")));
+        } else{
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
+            lsSQL2 = MiscUtil.addCondition(lsSQL2, "e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
+        }  
+        if (!p_oMaster.getString("sDeptIDxx").isEmpty()){
             lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
             lsSQL = lsSQL + lsSQL2;
             lsSQL = MiscUtil.addCondition(lsSQL, "sDeptIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sDeptIDxx")));
-            
+        }
+        System.out.println("detail = " + lsSQL);   
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
         int lnRow = 1;
@@ -2755,6 +2767,74 @@ public class Incentive {
 //            lsSQL = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
 //        }
 //                
+        lsSQL = "SELECT a.sTransNox," +
+                "  a.dTransact," +
+                "  a.sDeptIDxx," +
+                "  a.sMonthxxx," +
+                "  a.sRemarksx," +
+                "  a.sPrepared," +
+                "  a.dPrepared," +
+                "  a.cApprovd1," +
+                "  a.sApprovd1," +
+                "  a.dApprovd1," +
+                "  a.cApprovd2," +
+                "  a.sApprovd2," +
+                "  a.dApprovd2," +
+                "  a.sBatchNox," +
+                "  a.cTranStat," +
+                "  COALESCE(c.sBranchNm, (SELECT sBranchNm FROM Branch WHERE sBranchCd = LEFT(a.sTransNox,4))) AS xBranchNm," +
+                "  IFNULL (b.sDeptName, '') xDeptName," +
+                "  COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde" +
+                " FROM " +
+                "  Incentive_Master a" +
+                "  LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
+                "  LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd" +
+                " WHERE " + lsCondition().substring(4) ;
+//        lsSQL = "SELECT" + 
+//                    "  a.sTransNox" +
+//                    ", a.dTransact" +
+//                    ", a.sDeptIDxx" +
+//                    ", a.sMonthxxx" +
+//                    ", a.sRemarksx" +
+//                    ", a.sPrepared" +
+//                    ", a.dPrepared" +
+//                    ", a.cApprovd1" +
+//                    ", a.sApprovd1" +
+//                    ", a.dApprovd1" +
+//                    ", a.cApprovd2" +
+//                    ", a.sApprovd2" +
+//                    ", a.dApprovd2" +
+//                    ", a.sBatchNox" +
+//                    ", a.cTranStat" +
+//                    ", c.sBranchNm xBranchNm" +
+//                    ", IFNULL(b.sDeptName, '') xDeptName" +
+//                    ", IFNULL(a.sBranchCd,c.sBranchCd) sBranchCd" +
+//                " FROM Incentive_Master a" +
+//                        " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
+//                    " ,Branch c " +
+//                " WHERE  LEFT(a.sTransNox, 4) = c.sBranchCd" +
+//                " OR LEFT(a.sTransNox,4) = c.sBranchCd" + 
+//                     lsCondition() ;
+//        
+        return lsSQL;
+    }
+    
+    
+    public String getSQ_OpenMaster(String fsValue){
+        String lsSQL = "";
+        String lsStat = String.valueOf(p_nTranStat);
+//        String lsCondition = "";
+//        
+//        if (lsStat.length() > 1){
+//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+//            }
+//            
+//            lsSQL = " AND a.cTranStat IN (" + lsSQL.substring(2) + ")";
+//        } else{            
+//            lsSQL = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
+//        }
+//                
         lsSQL = "SELECT" + 
                     "  a.sTransNox" +
                     ", a.dTransact" +
@@ -2776,12 +2856,36 @@ public class Incentive {
                     ", a.sBranchCd" +
                 " FROM Incentive_Master a" +
                         " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
-                    ", Branch c " +
-                " WHERE LEFT(a.sTransNox, 4) = c.sBranchCd" +
-                " OR a.sBranchCd = c.sBranchCd" +
-                     lsCondition();
+                    ",Branch c " +
+                " WHERE a.sBranchCd = c.sBranchCd" +
+                     lsCondition() + fsValue + 
+                " UNION SELECT" + 
+                    "  a.sTransNox" +
+                    ", a.dTransact" +
+                    ", a.sDeptIDxx" +
+                    ", a.sMonthxxx" +
+                    ", a.sRemarksx" +
+                    ", a.sPrepared" +
+                    ", a.dPrepared" +
+                    ", a.cApprovd1" +
+                    ", a.sApprovd1" +
+                    ", a.dApprovd1" +
+                    ", a.cApprovd2" +
+                    ", a.sApprovd2" +
+                    ", a.dApprovd2" +
+                    ", a.sBatchNox" +
+                    ", a.cTranStat" +
+                    ", c.sBranchNm xBranchNm" +
+                    ", IFNULL(b.sDeptName, '') xDeptName" +
+                    ", c.sBranchCd" +
+                " FROM Incentive_Master a" +
+                        " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
+                    ",Branch c " +
+                " WHERE c.sBranchCd = LEFT(a.sTransNox,4) " + 
+                    lsCondition() + fsValue + " LIMIT 1";
         
         return lsSQL;
+        
     }
     
     private String getSQ_Detail(){
