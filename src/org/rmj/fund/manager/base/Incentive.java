@@ -758,7 +758,7 @@ public class Incentive {
         }
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){
-            if (!p_oApp.getDepartment().equals(AUDITOR)){
+            if (!p_oApp.getDepartment().equals(AUDITOR) && !p_oApp.getDepartment().equals(COLLECTION)){
                 if (!p_oApp.getDepartment().equals((String) getMaster("sDeptIDxx"))){
                     p_sMessage = "Unable to confirm other department transactions.";
                     return false;
