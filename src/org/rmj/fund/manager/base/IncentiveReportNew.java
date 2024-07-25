@@ -236,6 +236,8 @@ public class IncentiveReportNew {
                 + " nQtyActlx , "
                 + " nQtyGoalx , "
                 + " nInctvAmt , "
+                + " nAllcPerc , "
+                + " nAllcAmtx , "
                 + " nDedctAmt , "
                 + " xDedAlcPer , "
                 + " xDedAlcAmt "
@@ -260,11 +262,13 @@ public class IncentiveReportNew {
                 + " n.sInctveDs sInctveDs , "
                 + " a.cTranStat cTranStat , "
                 + " b.nTotalAmt nTotalAmt , "
-                + " l.nAmtActlx nAmtActlx , "
-                + " l.nAmtGoalx nAmtGoalx , "
-                + " l.nQtyActlx nQtyActlx , "
-                + " l.nQtyGoalx nQtyGoalx , "
-                + " IFNULL(l.nInctvAmt,'1B09259D73D06C95C457CB3A89B03299') nInctvAmt , "
+                + " m.nAmtActlx nAmtActlx , "
+                + " m.nAmtGoalx nAmtGoalx , "
+                + " m.nQtyActlx nQtyActlx , "
+                + " m.nQtyGoalx nQtyGoalx , "
+                + " IFNULL(m.nInctvAmt,'1B09259D73D06C95C457CB3A89B03299') nInctvAmt , "
+                + " l.nAllcPerc nAllcPerc , "
+                + " IFNULL(l.nAllcAmtx,'1B09259D73D06C95C457CB3A89B03299') nAllcAmtx , "
                 + " '1B09259D73D06C95C457CB3A89B03299' nDedctAmt , "
                 + " 0.0 xDedAlcPer , "
                 + " '1B09259D73D06C95C457CB3A89B03299' xDedAlcAmt "
@@ -289,13 +293,14 @@ public class IncentiveReportNew {
                 + " ON b.sEmployID = j.sEmployID "
                 + " LEFT JOIN Banks k "
                 + " ON j.sBankIDxx = k.sBankIDxx "
-                + " LEFT JOIN Incentive_Detail_Allocation l "
-                + " ON b.sTransNox = l.sTransNox "
-                + " LEFT JOIN Incentive_Detail_Allocation_Employee m "
-                + " ON b.sTransNox  = m.sTransNox "
-                + " AND b.sEmployID = m.sEmployID "
-                + " INNER JOIN Incentive n "
-                + " ON l.sInctveCD = m.sInctveCD = n.sInctveCD "
+                + " LEFT JOIN Incentive_Detail_Allocation_Employee l "
+                + " ON b.sTransNox  = l.sTransNox "
+                + " AND b.sEmployID = l.sEmployID "
+                + " LEFT JOIN Incentive_Detail_Allocation m "
+                + " ON l.sTransNox = m.sTransNox "
+                + " AND l.sInctveCD = m.sInctveCD "
+                + " LEFT JOIN Incentive n "
+                + " ON m.sInctveCD = n.sInctveCD WHERE l.sTransNox IS NOT NULL "
                 + " UNION SELECT "
                 + " a.sTransNox sTransNox , "
                 + " a.sMonthxxx sMonthxxx , "
@@ -322,6 +327,8 @@ public class IncentiveReportNew {
                 + " 0.0 nQtyActlx , "
                 + " 0.0 nQtyGoalx , "
                 + " '1B09259D73D06C95C457CB3A89B03299' nInctvAmt , "
+                + " 0.0 nAllcPerc , "
+                + " '1B09259D73D06C95C457CB3A89B03299' nAllcAmtx , "
                 + " IFNULL(o.nDedctAmt , '1B09259D73D06C95C457CB3A89B03299') nDedctAmt , "
                 + " p.nAllcPerc xDedAlcPer , "
                 + " IFNULL(p.nAllcAmtx , '1B09259D73D06C95C457CB3A89B03299') xDedAlcAmt "
@@ -356,7 +363,7 @@ public class IncentiveReportNew {
         return lsSQL;
     }
 
-    public boolean OpenRecord(String fsValue) throws SQLException {
+    public boolean OpenRecord(String fsValue, boolean isByBranch) throws SQLException {
 
         if (p_oApp == null) {
             p_sMessage = "Application driver is not set.";
@@ -383,12 +390,15 @@ public class IncentiveReportNew {
             lsCondition = MiscUtil.addCondition(lsCondition, "  sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
         }
         if (p_nTranStat >= 0) {
-            lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat IN ( " + SQLUtil.toSQL(p_nTranStat) + ")");
+            lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
         }
 
         lsCondition = lsCondition + getConfigFilter();
-
-        lsSQL = lsSQL + lsCondition + " ORDER BY sCompnyNm, sTransNox, sInctveCD ";
+        if (!isByBranch) {
+            lsSQL = lsSQL + lsCondition + " ORDER BY sCompnyNm, sTransNox, sInctveCD ";
+        } else {
+            lsSQL = lsSQL + lsCondition + " ORDER BY sBranchCD, sInctveCD ";
+        }
 
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
@@ -446,8 +456,13 @@ public class IncentiveReportNew {
         return Double.valueOf(MySQLAESCrypt.Decrypt(fsValue, p_oApp.SIGNATURE));
     }
 
-    private boolean DecryptIncentive() {
+    private boolean DecryptIncentive() throws SQLException {
         if (p_oRecord == null) {
+            p_sMessage = "No Record Found";
+            return false;
+        }
+
+        if (getItemCount() > 0) {
             p_sMessage = "No Record Found";
             return false;
         }
@@ -456,6 +471,7 @@ public class IncentiveReportNew {
             while (p_oRecord.next()) {
                 p_oRecord.updateObject("nTotalAmt", DecryptAmount(p_oRecord.getString("nTotalAmt")));
                 p_oRecord.updateObject("nInctvAmt", DecryptAmount(p_oRecord.getString("nInctvAmt")));
+                p_oRecord.updateObject("nAllcAmtx", DecryptAmount(p_oRecord.getString("nAllcAmtx")));
                 p_oRecord.updateObject("nDedctAmt", DecryptAmount(p_oRecord.getString("nDedctAmt")));
                 p_oRecord.updateObject("xDedAlcAmt", DecryptAmount(p_oRecord.getString("xDedAlcAmt")));
 
@@ -487,12 +503,12 @@ public class IncentiveReportNew {
 
             while (p_oRecord.next()) {
                 String employID = p_oRecord.getString("sEmployID");
-                double inctvAmt = p_oRecord.getDouble("nInctvAmt");
-                double dedctAmt = p_oRecord.getDouble("nDedctAmt");
+                double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
+                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("nDedctAmt");
 
                 System.out.println(p_oRecord.getString("sTransNox") + " "
                         + p_oRecord.getString("sEmployID") + " "
-                        + p_oRecord.getDouble("nInctvAmt") + " ");
+                        + p_oRecord.getDouble("nTotalAmt") + " ");
                 if (currentEmployID == null || !currentEmployID.equals(employID)) {
                     if (currentEmployID != null) {
 
@@ -501,7 +517,7 @@ public class IncentiveReportNew {
                         p_oRecordProcessed.moveToInsertRow();
                         p_oRecord.absolute(p_oRecord.getRow() - 1);
                         copyCurrentRow(p_oRecord, p_oRecordProcessed);
-                        System.out.println(p_oRecord.getString("sTransNox") + "  Employname  " + p_oRecord.getString("sEmployID"));
+//                        System.out.println(p_oRecord.getString("sTransNox") + "  Employname  " + p_oRecord.getString("sEmployID"));
                         p_oRecordProcessed.updateDouble("nInctvAmt", xInctvAmt);
                         p_oRecordProcessed.updateDouble("nDedctAmt", xDedctAmt);
 
@@ -542,6 +558,193 @@ public class IncentiveReportNew {
                 copyCurrentRow(p_oRecord, p_oRecordProcessed);
                 p_oRecordProcessed.updateDouble("nInctvAmt", xInctvAmt);
                 p_oRecordProcessed.updateDouble("nDedctAmt", xDedctAmt);
+
+                xNetAmount = xInctvAmt - xDedctAmt;
+                p_oRecordProcessed.updateDouble("nTotalAmt", xNetAmount);
+                p_oRecordProcessed.insertRow();
+                p_oRecordProcessed.moveToCurrentRow();
+            }
+
+            return true;
+        } catch (SQLException ex) {
+
+            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            p_sMessage = ex.getMessage();
+            return false;
+        }
+    }
+
+    public boolean procReportSummarizedBranchCategory() {
+        try {
+            if (p_oRecord == null) {
+                return false;
+            }
+            // Variables to track the current group and sums
+            String currentBranchCode = null;
+            String currentIncCategory = null;
+            p_oRecordProcessed.beforeFirst();
+            p_oRecord.beforeFirst();
+            double xInctvAmt = 0;
+            double xDedctAmt = 0;
+            double xNetAmount = 0;
+
+            while (p_oRecord.next()) {
+                String branchCd = p_oRecord.getString("sBranchCd");
+                String inctveCd = p_oRecord.getString("sInctveCD");
+                double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
+                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("nDedctAmt");
+
+//               
+                if (currentBranchCode == null
+                        || currentIncCategory == null
+                        || !currentBranchCode.equals(branchCd)
+                        || !currentIncCategory.equals(inctveCd)) {
+                    if (currentIncCategory != null) {
+
+                        // Insert the previous group into p_oRecordProcessed
+                        p_oRecordProcessed.last();
+                        p_oRecordProcessed.moveToInsertRow();
+                        p_oRecord.absolute(p_oRecord.getRow() - 1);
+                        copyCurrentRow(p_oRecord, p_oRecordProcessed);
+                        p_oRecordProcessed.updateDouble("nInctvAmt", xInctvAmt);
+                        p_oRecordProcessed.updateDouble("nDedctAmt", xDedctAmt);
+
+                        xNetAmount = xInctvAmt - xDedctAmt;
+                        p_oRecordProcessed.updateDouble("nTotalAmt", xNetAmount);
+                        p_oRecordProcessed.insertRow();
+                        p_oRecordProcessed.moveToCurrentRow();
+
+                        // Start a new group
+                        p_oRecord.absolute(p_oRecord.getRow() + 1);
+                        xInctvAmt = 0;
+                        xDedctAmt = 0;
+                        xNetAmount = 0;
+
+                        currentBranchCode = branchCd;
+                        currentIncCategory = inctveCd;
+                        xInctvAmt += inctvAmt;
+                        xDedctAmt += dedctAmt;
+
+                    } else {//handle first record
+                        xInctvAmt += inctvAmt;
+                        xDedctAmt += dedctAmt;
+                        currentBranchCode = branchCd;
+                        currentIncCategory = inctveCd;
+                    }
+
+                } else {
+                    // Accumulate the sums
+                    xInctvAmt += inctvAmt;
+                    xDedctAmt += dedctAmt;
+                }
+            }
+
+            // Ensure the last group is inserted
+            if (currentIncCategory != null) {
+                p_oRecordProcessed.last();
+                p_oRecordProcessed.moveToInsertRow();
+                p_oRecord.last();
+
+                copyCurrentRow(p_oRecord, p_oRecordProcessed);
+                p_oRecordProcessed.updateDouble("nInctvAmt", xInctvAmt);
+                p_oRecordProcessed.updateDouble("nDedctAmt", xDedctAmt);
+                xNetAmount = xInctvAmt - xDedctAmt;
+                p_oRecordProcessed.updateDouble("nTotalAmt", xNetAmount);
+                p_oRecordProcessed.insertRow();
+                p_oRecordProcessed.moveToCurrentRow();
+            }
+
+            return true;
+        } catch (SQLException ex) {
+
+            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            p_sMessage = ex.getMessage();
+            return false;
+        }
+    }
+    
+    public boolean procReportSummarizedEmployeeCategory() {
+        try {
+            if (p_oRecord == null) {
+                return false;
+            }
+            // Variables to track the current group and sums
+            String currentBranchCode = null;
+            String currentEmployID = null;
+            String currentIncCategory = null;
+            p_oRecordProcessed.beforeFirst();
+            p_oRecord.beforeFirst();
+            double xInctvAmt = 0;
+            double xDedctAmt = 0;
+            double xNetAmount = 0;
+
+            while (p_oRecord.next()) {
+                String branchCd = p_oRecord.getString("sBranchCd");
+                String employID = p_oRecord.getString("sEmployID");
+                String inctveCd = p_oRecord.getString("sInctveCD");
+                double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
+                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("nDedctAmt");
+
+//               
+                if (currentBranchCode == null
+                        || currentBranchCode == null
+                        || currentEmployID == null
+                        || !currentBranchCode.equals(branchCd)
+                        || !currentEmployID.equals(employID)
+                        || !currentIncCategory.equals(inctveCd)) {
+                    if (currentIncCategory != null) {
+
+                        // Insert the previous group into p_oRecordProcessed
+                        p_oRecordProcessed.last();
+                        p_oRecordProcessed.moveToInsertRow();
+                        p_oRecord.absolute(p_oRecord.getRow() - 1);
+                        copyCurrentRow(p_oRecord, p_oRecordProcessed);
+                        p_oRecordProcessed.updateDouble("nInctvAmt", xInctvAmt);
+                        p_oRecordProcessed.updateDouble("nDedctAmt", xDedctAmt);
+
+                        xNetAmount = xInctvAmt - xDedctAmt;
+                        p_oRecordProcessed.updateDouble("nTotalAmt", xNetAmount);
+                        p_oRecordProcessed.insertRow();
+                        p_oRecordProcessed.moveToCurrentRow();
+
+                        // Start a new group
+                        p_oRecord.absolute(p_oRecord.getRow() + 1);
+                        xInctvAmt = 0;
+                        xDedctAmt = 0;
+                        xNetAmount = 0;
+
+                        currentBranchCode = branchCd;
+                        currentEmployID = employID;
+                        currentIncCategory = inctveCd;
+                        xInctvAmt += inctvAmt;
+                        xDedctAmt += dedctAmt;
+
+                    } else {//handle first record
+                        xInctvAmt += inctvAmt;
+                        xDedctAmt += dedctAmt;
+                        currentBranchCode = branchCd;
+                        currentEmployID = employID;
+                        currentIncCategory = inctveCd;
+                    }
+
+                } else {
+                    // Accumulate the sums
+                    xInctvAmt += inctvAmt;
+                    xDedctAmt += dedctAmt;
+                }
+            }
+
+            // Ensure the last group is inserted
+            if (currentIncCategory != null) {
+                p_oRecordProcessed.last();
+                p_oRecordProcessed.moveToInsertRow();
+                p_oRecord.last();
+
+                copyCurrentRow(p_oRecord, p_oRecordProcessed);
+                p_oRecordProcessed.updateDouble("nInctvAmt", xInctvAmt);
+                p_oRecordProcessed.updateDouble("nDedctAmt", xDedctAmt);
+                xNetAmount = xInctvAmt - xDedctAmt;
+                p_oRecordProcessed.updateDouble("nTotalAmt", xNetAmount);
                 p_oRecordProcessed.insertRow();
                 p_oRecordProcessed.moveToCurrentRow();
             }
@@ -742,11 +945,17 @@ public class IncentiveReportNew {
     public String getSQ_Category() {
         String lsSQL = "";
 
-        lsSQL = "SELECT"
-                + "  sInctveCD "
+        lsSQL = "SELECT sInctveCD, xxColName "
+                + " FROM "
+                + "( SELECT sInctveCD "
                 + " , sInctveDs xxColName "
                 + " FROM Incentive "
-                + " WHERE cRecdStat = 1 ORDER BY sInctveCD";
+                + " WHERE cRecdStat = '1' "
+                + " UNION "
+                + " SELECT "
+                + " '999' sInctveCD "
+                + " , 'Deduction' xxColName) Incentive_Category "
+                + "ORDER BY sInctveCD";
 
         return lsSQL;
     }
