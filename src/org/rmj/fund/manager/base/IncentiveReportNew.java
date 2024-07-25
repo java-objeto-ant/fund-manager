@@ -41,6 +41,7 @@ public class IncentiveReportNew {
     private CachedRowSet p_oBranch;
     private CachedRowSet p_oCategory;
     private CachedRowSet p_oDivision;
+    private CachedRowSet p_oBranchArea;
 
     private String p_sBranchCd;
 
@@ -132,15 +133,6 @@ public class IncentiveReportNew {
         return getRecord(fnRow, getColumnIndex(p_oRecordProcessed, fsIndex));
     }
 
-    public Object getBranch(int fnIndex) throws SQLException {
-        if (fnIndex == 0) {
-            return null;
-        }
-
-        p_oBranch.first();
-        return p_oBranch.getObject(fnIndex);
-    }
-
     public Object getFilter(int fiFilter, String fsIndex) throws SQLException {
         switch (fiFilter) {
             case 2:
@@ -149,8 +141,19 @@ public class IncentiveReportNew {
                 return getDivision(getColumnIndex(p_oDivision, fsIndex));
             case 4:
                 return getCategory(getColumnIndex(p_oCategory, fsIndex));
+            case 5:
+                return getBranchArea(getColumnIndex(p_oBranchArea, fsIndex));
         }
         return null;
+    }
+
+    public Object getBranch(int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+
+        p_oBranch.first();
+        return p_oBranch.getObject(fnIndex);
     }
 
     public Object getBranch(String fsIndex) throws SQLException {
@@ -163,6 +166,27 @@ public class IncentiveReportNew {
 
     public CachedRowSet getBranch() {
         return p_oBranch;
+    }
+
+    public Object getBranchArea(int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+
+        p_oBranchArea.first();
+        return p_oBranchArea.getObject(fnIndex);
+    }
+
+    public Object getBranchArea(String fsIndex) throws SQLException {
+        return getBranchArea(getColumnIndex(p_oBranchArea, fsIndex));
+    }
+
+    public void setBranchArea() {
+        p_oBranchArea = null;
+    }
+
+    public CachedRowSet getBranchArea() {
+        return p_oBranchArea;
     }
 
     public Object getDivision(int fnIndex) throws SQLException {
@@ -229,6 +253,7 @@ public class IncentiveReportNew {
                 + " IFNULL(sBankName,'') sBankName , "
                 + " IFNULL(sBankAcct,'') sBankAcct , "
                 + " xSrvcYear , "
+                + " cRecdStat , "
                 + " sInctveCD , "
                 + " sInctveDs , "
                 + " cTranStat , "
@@ -251,7 +276,7 @@ public class IncentiveReportNew {
                 + " g.sBranchNm sBranchNm , "
                 + " i.sDivsnCde sDivsnCde , "
                 + " i.sDivsnDsc sDivsnDsc , "
-                + " q.sAreaCode sAreaCode , " 
+                + " q.sAreaCode sAreaCode , "
                 + " q.sAreaDesc sAreaDesc , "
                 + " d.sCompnyNm sCompnyNm , "
                 + " b.sEmployID sEmployID , "
@@ -262,6 +287,7 @@ public class IncentiveReportNew {
                 + " k.sBankName sBankName , "
                 + " j.sBankAcct sBankAcct , "
                 + " IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(c.dStartEmp, c.dHiredxxx)) / 365), '') xSrvcYear , "
+                + " c.cRecdStat cRecdStat , "
                 + " n.sInctveCD sInctveCD , "
                 + " n.sInctveDs sInctveDs , "
                 + " a.cTranStat cTranStat , "
@@ -315,7 +341,7 @@ public class IncentiveReportNew {
                 + " g.sBranchNm sBranchNm , "
                 + " i.sDivsnCde sDivsnCde , "
                 + " i.sDivsnDsc sDivsnDsc , "
-                + " q.sAreaCode sAreaCode , " 
+                + " q.sAreaCode sAreaCode , "
                 + " q.sAreaDesc sAreaDesc , "
                 + " d.sCompnyNm sCompnyNm , "
                 + " b.sEmployID sEmployID , "
@@ -326,6 +352,7 @@ public class IncentiveReportNew {
                 + " k.sBankName sBankName , "
                 + " j.sBankAcct sBankAcct , "
                 + " IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(c.dStartEmp, c.dHiredxxx)) / 365), '') xSrvcYear , "
+                + " c.cRecdStat cRecdStat , "
                 + " '999' sInctveCD , "
                 + " 'Deduction' sInctveDs , "
                 + " a.cTranStat cTranStat , "
@@ -398,6 +425,9 @@ public class IncentiveReportNew {
         }
         if (p_oCategory != null) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
+        }
+        if (p_oBranchArea != null) {
+            lsCondition = MiscUtil.addCondition(lsCondition, "  sAreaCode = " + SQLUtil.toSQL(getBranchArea("sAreaCode")));
         }
         if (p_nTranStat >= 0) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
@@ -672,7 +702,7 @@ public class IncentiveReportNew {
             return false;
         }
     }
-    
+
     public boolean procReportSummarizedEmployeeCategory() {
         try {
             if (p_oRecord == null) {
@@ -757,6 +787,7 @@ public class IncentiveReportNew {
                 p_oRecordProcessed.updateDouble("nTotalAmt", xNetAmount);
                 p_oRecordProcessed.insertRow();
                 p_oRecordProcessed.moveToCurrentRow();
+                p_oRecord.absolute(p_oRecord.getRow() + 1);
             }
 
             return true;
@@ -774,6 +805,42 @@ public class IncentiveReportNew {
         for (int i = 1; i <= columnCount; i++) {
             target.updateObject(i, source.getObject(i));
         }
+    }
+
+    public boolean procReportDetailedReport() {
+        try {
+            if (p_oRecord == null) {
+                return false;
+            }
+
+            p_oRecordProcessed.beforeFirst();
+            p_oRecord.beforeFirst();
+
+            while (p_oRecord.next()) {
+                processDetailedRecord(p_oRecord, p_oRecordProcessed);
+            }
+
+            return true;
+        } catch (SQLException ex) {
+            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            p_sMessage = ex.getMessage();
+            return false;
+        }
+    }
+
+    private void processDetailedRecord(CachedRowSet source, CachedRowSet destination) throws SQLException {
+        double xInctvAmt = (source.getDouble("nInctvAmt") * source.getDouble("nAllcPerc") / 100) + source.getDouble("nAllcAmtx");
+        double xDedctAmt = (source.getDouble("nDedctAmt") * source.getDouble("xDedAlcPer") / 100) + source.getDouble("nDedctAmt");
+        double xNetAmount = xInctvAmt - xDedctAmt;
+
+        destination.last();
+        destination.moveToInsertRow();
+        copyCurrentRow(source, destination);
+        destination.updateDouble("nInctvAmt", xInctvAmt);
+        destination.updateDouble("nDedctAmt", xDedctAmt);
+        destination.updateDouble("nTotalAmt", xNetAmount);
+        destination.insertRow();
+        destination.moveToCurrentRow();
     }
 
     public String getSQ_Branch() {
@@ -958,14 +1025,16 @@ public class IncentiveReportNew {
         lsSQL = "SELECT sInctveCD, xxColName "
                 + " FROM "
                 + "( SELECT sInctveCD "
-                + " , sInctveDs xxColName "
+                + " , sInctveDs xxColName"
+                + " , cRecdStat "
                 + " FROM Incentive "
                 + " WHERE cRecdStat = '1' "
                 + " UNION "
                 + " SELECT "
                 + " '999' sInctveCD "
-                + " , 'Deduction' xxColName) Incentive_Category "
-                + "ORDER BY sInctveCD";
+                + " , 'Deduction' xxColName"
+                + " , '1' cRecdStat ) Incentive_Category "
+                + " WHERE cRecdStat = '1' ";
 
         return lsSQL;
     }
@@ -1002,7 +1071,7 @@ public class IncentiveReportNew {
         if (fbByCode) {
             lsSQL = MiscUtil.addCondition(lsSQL, "sInctveCD = " + SQLUtil.toSQL(fsValue));
         } else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sInctveDs LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL = MiscUtil.addCondition(lsSQL, "xxColName LIKE " + SQLUtil.toSQL(fsValue + "%"));
         }
 
         JSONObject loJSON;
@@ -1014,7 +1083,7 @@ public class IncentiveReportNew {
                     fsValue,
                     "Code»Incentive Type",
                     "sInctveCD»xxColName",
-                    "sInctveCD»sInctveDs",
+                    "sInctveCD»xxColName",
                     fbByCode ? 0 : 1);
 
             if (loJSON != null) {
@@ -1028,7 +1097,7 @@ public class IncentiveReportNew {
         if (fbByCode) {
             lsSQL = MiscUtil.addCondition(lsSQL, "sInctveCD = " + SQLUtil.toSQL(fsValue));
         } else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "sInctveDs LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL = MiscUtil.addCondition(lsSQL, "xxColName LIKE " + SQLUtil.toSQL(fsValue + "%"));
             lsSQL += " LIMIT 1";
         }
 
@@ -1046,6 +1115,93 @@ public class IncentiveReportNew {
         return OpenCategory(lsCode);
     }
 
+    public String getSQ_BranchArea() {
+        String lsSQL = "";
+
+        lsSQL = " SELECT sAreaCode "
+                + " , sAreaDesc xxColName "
+                + " FROM Branch_Area "
+                + " WHERE cRecdStat = '1' ";
+
+        return lsSQL;
+    }
+
+    public boolean OpenBranchArea(String fsArea) throws SQLException {
+        p_nEditMode = EditMode.UNKNOWN;
+
+        if (p_oApp == null) {
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+
+        p_sMessage = "";
+
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+
+        //open master
+        lsSQL = MiscUtil.addCondition(getSQ_BranchArea(), "sAreaCode = " + SQLUtil.toSQL(fsArea));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oBranchArea = factory.createCachedRowSet();
+        p_oBranchArea.populate(loRS);
+        MiscUtil.close(loRS);
+
+        p_nEditMode = EditMode.READY;
+
+        return true;
+    }
+
+    public boolean searchBranchArea(String fsValue, boolean fbByCode) throws SQLException {
+
+        String lsSQL = getSQ_BranchArea();
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sAreaCode = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sAreaDesc LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+
+        JSONObject loJSON;
+
+        if (p_bWithUI) {
+            loJSON = showFXDialog.jsonSearch(
+                    p_oApp,
+                    lsSQL,
+                    fsValue,
+                    "Code»Area Name",
+                    "sAreaCode»xxColName",
+                    "sAreaCode»sAreaDesc",
+                    fbByCode ? 0 : 1);
+
+            if (loJSON != null) {
+                return OpenBranchArea((String) loJSON.get("sAreaCode"));
+            } else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sAreaCode = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sAreaDesc LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL += " LIMIT 1";
+        }
+
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+
+        if (!loRS.next()) {
+            MiscUtil.close(loRS);
+            p_sMessage = "No Division found for the given criteria.";
+            return false;
+        }
+
+        String lsCode = loRS.getString("sAreaDesc");
+        MiscUtil.close(loRS);
+
+        return OpenBranchArea(lsCode);
+    }
+
     public boolean searchFilter(int fiIndex, String fsValue, boolean fbByCode) throws SQLException {
         switch (fiIndex) {
             case 2:
@@ -1054,6 +1210,8 @@ public class IncentiveReportNew {
                 return searchDivision(fsValue, fbByCode);
             case 4:
                 return searchCategory(fsValue, fbByCode);
+            case 5:
+                return searchBranchArea(fsValue, fbByCode);
             default:
                 return false;
         }
