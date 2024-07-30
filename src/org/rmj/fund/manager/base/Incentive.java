@@ -2668,13 +2668,13 @@ public class Incentive {
             return false;
         }
         
-        p_oDetail.beforeFirst();
-        while (p_oDetail.next()){            
-            if (DecryptAmount(p_oDetail.getString("nTotalAmt")) < 0.00){
-                p_sMessage = p_oDetail.getString("xEmployNm") + " has negative incentive total amount.";
-                return false;
-            }    
-        }
+//        p_oDetail.beforeFirst();
+//        while (p_oDetail.next()){            
+////            if (DecryptAmount(p_oDetail.getString("nTotalAmt")) < 0.00){
+////                p_sMessage = p_oDetail.getString("xEmployNm") + " has negative incentive total amount.";
+////                return false;
+////            }    
+//        }
         
         //validate incentive
         if (getIncentiveCount() == 0){

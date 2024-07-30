@@ -113,6 +113,13 @@ public class IncentiveReportNew {
         }
         p_oRecordProcessed.last();
         return p_oRecordProcessed.getRow();
+    } 
+    public int getSQLItemCount() throws SQLException {
+        if (p_oRecord == null) {
+            return 0;
+        }
+        p_oRecord.last();
+        return p_oRecord.getRow();
     }
 
     public Object getRecord(int fnRow, int fnIndex) throws SQLException {
@@ -410,24 +417,27 @@ public class IncentiveReportNew {
         String lsCondition = "";
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
-//        
-//         
+        //period
         if (!fsValue.isEmpty()) {
             lsCondition = MiscUtil.addCondition(lsCondition, " sMonthxxx = " + SQLUtil.toSQL(fsValue));
         }
-
+        //brnach
         if (p_oBranch != null) {
             lsCondition = MiscUtil.addCondition(lsCondition, " sBranchCD = " + SQLUtil.toSQL(getBranch("sBranchCd")));
         }
+        //division
         if (p_oDivision != null) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
         }
+        //incentive
         if (p_oCategory != null) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
         }
+        //area
         if (p_oBranchArea != null) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  sAreaCode = " + SQLUtil.toSQL(getBranchArea("sAreaCode")));
         }
+        //ctranstat
         if (p_nTranStat >= 0) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
         }
@@ -453,17 +463,17 @@ public class IncentiveReportNew {
         return DecryptIncentive();
     }
 
-    private String getTranStat() {
-        String lsStat = String.valueOf(p_nTranStat);
-        String lsCondition = "";
-        if (lsStat.length() >= 1) {
-            for (int lnCtr = 0; lnCtr <= lsStat.length() - 1; lnCtr++) {
-                lsCondition += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-
-        }
-        return lsCondition;
-    }
+//    private String getTranStat() {
+//        String lsStat = String.valueOf(p_nTranStat);
+//        String lsCondition = "";
+//        if (lsStat.length() >= 1) {
+//            for (int lnCtr = 0; lnCtr <= lsStat.length() - 1; lnCtr++) {
+//                lsCondition += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+//            }
+//
+//        }
+//        return lsCondition;
+//    }
 
     private String getConfigFilter() {
         String lsCondition = "";
@@ -501,7 +511,7 @@ public class IncentiveReportNew {
             return false;
         }
 
-        if (getItemCount() > 0) {
+        if (getSQLItemCount() > 0) {
             p_sMessage = "No Record Found";
             return false;
         }
