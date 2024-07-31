@@ -511,12 +511,14 @@ public class IncentiveReportNew {
             return false;
         }
 
-        if (getSQLItemCount() > 0) {
+        if (getSQLItemCount() < 0) {
             p_sMessage = "No Record Found";
             return false;
         }
+        System.err.println("Item to Decrypt = " + getSQLItemCount());
         System.err.println("System Start Decrypting Value's");
         try {
+            p_oRecord.beforeFirst();
             while (p_oRecord.next()) {
                 p_oRecord.updateObject("nTotalAmt", DecryptAmount(p_oRecord.getString("nTotalAmt")));
                 p_oRecord.updateObject("nInctvAmt", DecryptAmount(p_oRecord.getString("nInctvAmt")));
@@ -553,7 +555,7 @@ public class IncentiveReportNew {
             while (p_oRecord.next()) {
                 String employID = p_oRecord.getString("sEmployID");
                 double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
-                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("nDedctAmt");
+                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("xDedAlcAmt");
 
                 System.out.println(p_oRecord.getString("sTransNox") + " "
                         + p_oRecord.getString("sEmployID") + " "
@@ -641,7 +643,7 @@ public class IncentiveReportNew {
                 String branchCd = p_oRecord.getString("sBranchCd");
                 String inctveCd = p_oRecord.getString("sInctveCD");
                 double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
-                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("nDedctAmt");
+                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("xDedAlcAmt");
 
 //               
                 if (currentBranchCode == null
@@ -732,7 +734,7 @@ public class IncentiveReportNew {
                 String employID = p_oRecord.getString("sEmployID");
                 String inctveCd = p_oRecord.getString("sInctveCD");
                 double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
-                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("nDedctAmt");
+                double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("xDedAlcAmt");
 
 //               
                 if (currentBranchCode == null
@@ -838,10 +840,12 @@ public class IncentiveReportNew {
     }
 
     private void processDetailedRecord(CachedRowSet source, CachedRowSet destination) throws SQLException {
+        
         double xInctvAmt = (source.getDouble("nInctvAmt") * source.getDouble("nAllcPerc") / 100) + source.getDouble("nAllcAmtx");
-        double xDedctAmt = (source.getDouble("nDedctAmt") * source.getDouble("xDedAlcPer") / 100) + source.getDouble("nDedctAmt");
+        double xDedctAmt = (source.getDouble("nDedctAmt") * source.getDouble("xDedAlcPer") / 100) + source.getDouble("xDedAlcAmt");
+        
         double xNetAmount = xInctvAmt - xDedctAmt;
-
+//            System.out.println(source.getString("sTransNox") + source.getString("sCompnyNm") +"Total to Reprot ="+ xNetAmount);
         destination.last();
         destination.moveToInsertRow();
         copyCurrentRow(source, destination);
