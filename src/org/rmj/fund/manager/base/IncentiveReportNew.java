@@ -440,9 +440,10 @@ public class IncentiveReportNew {
         //ctranstat
         if (p_nTranStat >= 0) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            lsCondition = lsCondition + getConfigFilter();
         }
 
-        lsCondition = lsCondition + getConfigFilter();
+        
         if (!isByBranch) {
             lsSQL = lsSQL + lsCondition + " ORDER BY sCompnyNm, sTransNox, sInctveCD ";
         } else {
@@ -477,19 +478,19 @@ public class IncentiveReportNew {
 
     private String getConfigFilter() {
         String lsCondition = "";
-        String lsStat = String.valueOf(p_nTranStat);
+//        String lsStat = String.valueOf(p_nTranStat);
 
         System.out.println("department  = " + p_oApp.getDepartment());
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
             if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())) {
                 if (p_oApp.getDepartment().equals(AUDITOR)) {
-                    if (lsStat.equals("1")) {
-                        lsCondition = lsCondition + " AND cApprovd2 = '0'";
-                    } else if (lsStat.equals("2")) {
-                        lsCondition = lsCondition + " AND cApprovd2 = '1'";
-                    } else if (lsStat.equals("12")) {
-                        lsCondition = lsCondition + " AND cApprovd2 IN ( '1' , '2' )";
-                    }
+//                    if (lsStat.equals("1")) {
+//                        lsCondition = lsCondition + " AND cApprovd2 = '0'";
+//                    } else if (lsStat.equals("2")) {
+//                        lsCondition = lsCondition + " AND cApprovd2 = '1'";
+//                    } else if (lsStat.equals("12")) {
+//                        lsCondition = lsCondition + " AND cApprovd2 IN ( '1' , '2' )";
+//                    }
                 }
             } else {
                 lsCondition = lsCondition + " AND LEFT(sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
