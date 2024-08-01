@@ -1,18 +1,32 @@
 package org.rmj.fund.manager.base;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.ShowMessageFX;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 
@@ -113,7 +127,8 @@ public class IncentiveReportNew {
         }
         p_oRecordProcessed.last();
         return p_oRecordProcessed.getRow();
-    } 
+    }
+
     public int getSQLItemCount() throws SQLException {
         if (p_oRecord == null) {
             return 0;
@@ -443,10 +458,9 @@ public class IncentiveReportNew {
         //ctranstat
         if (p_nTranStat >= 0) {
             lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
-            lsCondition = lsCondition + getConfigFilter();
-        }
 
-        
+        }
+        lsCondition = lsCondition + getConfigFilter();
         if (!isByBranch) {
             lsSQL = lsSQL + lsCondition + " ORDER BY sCompnyNm, sTransNox, sInctveCD ";
         } else {
@@ -478,7 +492,6 @@ public class IncentiveReportNew {
 //        }
 //        return lsCondition;
 //    }
-
     private String getConfigFilter() {
         String lsCondition = "";
         String lsStat = String.valueOf(p_nTranStat);
@@ -491,8 +504,6 @@ public class IncentiveReportNew {
                         lsCondition = lsCondition + " AND cApprovd2 = '0'";
                     } else if (lsStat.equals("2")) {
                         lsCondition = lsCondition + " AND cApprovd2 = '1'";
-                    } else if (lsStat.equals("12")) {
-                        lsCondition = lsCondition + " AND cApprovd2 IN ( '1' , '2' )";
                     }
                 }
             } else {
@@ -561,9 +572,9 @@ public class IncentiveReportNew {
                 double inctvAmt = (p_oRecord.getDouble("nInctvAmt") * p_oRecord.getDouble("nAllcPerc") / 100) + p_oRecord.getDouble("nAllcAmtx");
                 double dedctAmt = (p_oRecord.getDouble("nDedctAmt") * p_oRecord.getDouble("xDedAlcPer") / 100) + p_oRecord.getDouble("xDedAlcAmt");
 
-                System.out.println(p_oRecord.getString("sTransNox") + " "
-                        + p_oRecord.getString("sEmployID") + " "
-                        + p_oRecord.getDouble("nTotalAmt") + " ");
+//                System.out.println(p_oRecord.getString("sTransNox") + " "
+//                        + p_oRecord.getString("sEmployID") + " "
+//                        + p_oRecord.getDouble("nTotalAmt") + " ");
                 if (currentEmployID == null || !currentEmployID.equals(employID)) {
                     if (currentEmployID != null) {
 
@@ -844,10 +855,10 @@ public class IncentiveReportNew {
     }
 
     private void processDetailedRecord(CachedRowSet source, CachedRowSet destination) throws SQLException {
-        
+
         double xInctvAmt = (source.getDouble("nInctvAmt") * source.getDouble("nAllcPerc") / 100) + source.getDouble("nAllcAmtx");
         double xDedctAmt = (source.getDouble("nDedctAmt") * source.getDouble("xDedAlcPer") / 100) + source.getDouble("xDedAlcAmt");
-        
+
         double xNetAmount = xInctvAmt - xDedctAmt;
 //            System.out.println(source.getString("sTransNox") + source.getString("sCompnyNm") +"Total to Reprot ="+ xNetAmount);
         destination.last();
@@ -1232,5 +1243,272 @@ public class IncentiveReportNew {
             default:
                 return false;
         }
+    }
+
+    public boolean ExportData(Stage fsParentWindow, int fsIndex) {
+        switch (fsIndex) {
+            case 1:
+                return ExportEmployeeCategoryData(fsParentWindow);
+            case 2:
+                return ExportBranchCategoryData(fsParentWindow);
+            default:
+                return false;
+        }
+
+    }
+
+    private boolean ExportBranchCategoryData(Stage fsParentWindow) {
+        if (p_oRecordProcessed == null) {
+            p_sMessage = "Please Generate a Report.";
+            return false;
+        }
+        String templateFilePath = "D:\\GGC_Java_Systems\\temp\\IncentiveTemplateExport.xlsx";
+
+        try (FileInputStream fis = new FileInputStream(templateFilePath); XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
+
+            XSSFSheet sheet = workbook.getSheetAt(0);
+            int lnLastRow = sheet.getLastRowNum();
+            Row headerRow = sheet.getRow(1);
+            Row newDetailRow = sheet.createRow(lnLastRow + 1);
+
+            if (headerRow == null) {
+                headerRow = sheet.createRow(1);
+            }
+
+            headerRow.createCell(0).setCellValue("Division");
+            headerRow.createCell(1).setCellValue("Area");
+            headerRow.createCell(2).setCellValue("Branch");
+            headerRow.createCell(3).setCellValue("Period");
+            int incCatCol = 4;
+
+            Set<String> addedHeaders = new HashSet<>();
+            Map<String, Integer> headerColumns = new HashMap<>();
+            p_oRecordProcessed.beforeFirst(); // Move cursor to the beginning
+
+            while (p_oRecordProcessed.next()) {
+                String sInctveDs = p_oRecordProcessed.getString("sInctveDs");
+                if (!addedHeaders.contains(sInctveDs)) {
+                    addedHeaders.add(sInctveDs);
+                    headerRow.createCell(incCatCol).setCellValue(sInctveDs);
+                    headerColumns.put(sInctveDs, incCatCol);
+                    incCatCol++;
+                }
+            }
+            headerRow.createCell(incCatCol).setCellValue("Total Amount");
+
+            p_oRecordProcessed.beforeFirst();
+            String previousBranchCd = "";
+            Map<String, Double> totalAmountsByIncentive = new HashMap<>();
+
+            while (p_oRecordProcessed.next()) {
+                String branchCd = p_oRecordProcessed.getString("sBranchCd");
+
+                // When branchCd changes, write the accumulated totals and start a new row
+                if (!branchCd.equals(previousBranchCd)) {
+                    if (!previousBranchCd.isEmpty()) {
+                        // Write the accumulated totals for the previous branch
+                        double totalAmount = 0.0;
+                        for (Map.Entry<String, Double> entry : totalAmountsByIncentive.entrySet()) {
+                            int columnIndex = headerColumns.get(entry.getKey());
+                            double value = entry.getValue();
+                            newDetailRow.createCell(columnIndex).setCellValue(value);
+                            totalAmount += value; // Sum up the total amount for this branch
+                        }
+                        // Write the total amount in the last column
+                        newDetailRow.createCell(incCatCol).setCellValue(totalAmount);
+                    }
+
+                    // Reset the totals and prepare for the new branch
+                    totalAmountsByIncentive.clear();
+                    newDetailRow = sheet.createRow(lnLastRow++);
+                    previousBranchCd = branchCd;
+
+                    // Fill in other columns for the new row
+                    newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sDivsnDsc"));
+                    newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
+                    newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
+                    newDetailRow.createCell(3).setCellValue(p_oRecordProcessed.getString("sMonthxxx"));
+                }
+
+                // Accumulate the amounts for the current branch
+                String sInctveDs = p_oRecordProcessed.getString("sInctveDs");
+                double amount = p_oRecordProcessed.getDouble("nTotalAmt");
+                totalAmountsByIncentive.put(sInctveDs, totalAmountsByIncentive.getOrDefault(sInctveDs, 0.0) + amount);
+            }
+
+            //  set each Category and compute the Total amount of each
+            if (!totalAmountsByIncentive.isEmpty()) {
+                double totalAmount = 0.0;
+                for (Map.Entry<String, Double> entry : totalAmountsByIncentive.entrySet()) {
+                    int columnIndex = headerColumns.get(entry.getKey());
+                    double value = entry.getValue();
+                    newDetailRow.createCell(columnIndex).setCellValue(value);
+                    totalAmount += value; // Sum up the total amount for this branch
+                }
+                // Write the total amount in the last column
+                newDetailRow.createCell(incCatCol).setCellValue(totalAmount);
+            }
+
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setInitialDirectory(new File("d:\\"));
+            fileChooser.setTitle("Save the exported File");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
+            File selectedFile = fileChooser.showSaveDialog(fsParentWindow);
+
+            if (selectedFile != null) {
+                String fileName = selectedFile.getName();
+                String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+                if (!fileExtension.equalsIgnoreCase("xlsx")) {
+                    selectedFile = new File(selectedFile.getAbsolutePath() + ".xlsx");
+                }
+
+                try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
+                    workbook.write(fos);
+                    workbook.close();
+                    ShowMessageFX.Information(null, "Exporting of report is successful", "Incentive's Report Export", null);
+                    return true;
+                } catch (IOException ex) {
+                    p_sMessage = ex.getMessage();
+                }
+            } else {
+                return true;
+            }
+        } catch (IOException | SQLException e) {
+            p_sMessage = e.getMessage();
+        }
+
+        p_sMessage = "An error occurred during the process.";
+        return false;
+    }
+
+    private boolean ExportEmployeeCategoryData(Stage fsParentWindow) {
+        if (p_oRecordProcessed == null) {
+            p_sMessage = "Please Generate a Report.";
+            return false;
+        }
+        String templateFilePath = "D:\\GGC_Java_Systems\\temp\\IncentiveTemplateExport.xlsx";
+
+        try (FileInputStream fis = new FileInputStream(templateFilePath); XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
+
+            XSSFSheet sheet = workbook.getSheetAt(0);
+            int lnLastRow = sheet.getLastRowNum();
+            Row headerRow = sheet.getRow(1);
+            Row newDetailRow = sheet.createRow(lnLastRow + 1);
+
+            if (headerRow == null) {
+                headerRow = sheet.createRow(1);
+            }
+
+            headerRow.createCell(0).setCellValue("Division");
+            headerRow.createCell(1).setCellValue("Area");
+            headerRow.createCell(2).setCellValue("Branch");
+            headerRow.createCell(3).setCellValue("Employee");
+            headerRow.createCell(4).setCellValue("Position");
+            headerRow.createCell(5).setCellValue("Period");
+            int incCatCol = 6;
+
+            Set<String> addedHeaders = new HashSet<>();
+            Map<String, Integer> headerColumns = new HashMap<>();
+            p_oRecordProcessed.beforeFirst(); // Move cursor to the beginning
+
+            while (p_oRecordProcessed.next()) {
+                String sInctveDs = p_oRecordProcessed.getString("sInctveDs");
+                if (!addedHeaders.contains(sInctveDs)) {
+                    addedHeaders.add(sInctveDs);
+                    headerRow.createCell(incCatCol).setCellValue(sInctveDs);
+                    headerColumns.put(sInctveDs, incCatCol);
+                    incCatCol++;
+                }
+            }
+            headerRow.createCell(incCatCol).setCellValue("Total Amount");
+
+            p_oRecordProcessed.beforeFirst();
+            String previousEmployID = "";
+            Map<String, Double> totalAmountsByIncentive = new HashMap<>();
+
+            while (p_oRecordProcessed.next()) {
+
+                String employID = p_oRecordProcessed.getString("sEmployID");
+                // When branchCd changes, write the accumulated totals and start a new row
+                if (!employID.equals(previousEmployID)) {
+                    if (!previousEmployID.isEmpty()) {
+                        // Write the accumulated totals for the previous branch
+                        double totalAmount = 0.0;
+                        for (Map.Entry<String, Double> entry : totalAmountsByIncentive.entrySet()) {
+                            int columnIndex = headerColumns.get(entry.getKey());
+                            double value = entry.getValue();
+                            newDetailRow.createCell(columnIndex).setCellValue(value);
+                            totalAmount += value; // Sum up the total amount for this branch
+                        }
+                        // Write the total amount in the last column
+                        newDetailRow.createCell(incCatCol).setCellValue(totalAmount);
+                    }
+
+                    // Reset the totals and prepare for the new branch
+                    totalAmountsByIncentive.clear();
+                    newDetailRow = sheet.createRow(lnLastRow++);
+                    previousEmployID = employID;
+                    // Fill in other columns for the new row
+                    newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sDivsnDsc"));
+                    newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
+                    newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
+                    newDetailRow.createCell(3).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
+                    newDetailRow.createCell(4 ).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
+                    newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sMonthxxx"));
+                }
+
+                // Accumulate the amounts for the current branch
+                String sInctveDs = p_oRecordProcessed.getString("sInctveDs");
+                double amount = p_oRecordProcessed.getDouble("nTotalAmt");
+                totalAmountsByIncentive.put(sInctveDs, totalAmountsByIncentive.getOrDefault(sInctveDs, 0.0) + amount);
+            }
+
+            //  set each Category and compute the Total amount of each
+            if (!totalAmountsByIncentive.isEmpty()) {
+                double totalAmount = 0.0;
+                for (Map.Entry<String, Double> entry : totalAmountsByIncentive.entrySet()) {
+                    int columnIndex = headerColumns.get(entry.getKey());
+                    double value = entry.getValue();
+                    newDetailRow.createCell(columnIndex).setCellValue(value);
+                    totalAmount += value; // Sum up the total amount for this branch
+                }
+                // Write the total amount in the last column
+                newDetailRow.createCell(incCatCol).setCellValue(totalAmount);
+            }
+
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setInitialDirectory(new File("d:\\"));
+            fileChooser.setTitle("Save the exported File");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
+            File selectedFile = fileChooser.showSaveDialog(fsParentWindow);
+
+            if (selectedFile != null) {
+                String fileName = selectedFile.getName();
+                String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+                if (!fileExtension.equalsIgnoreCase("xlsx")) {
+                    selectedFile = new File(selectedFile.getAbsolutePath() + ".xlsx");
+                }
+
+                try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
+                    workbook.write(fos);
+                    workbook.close();
+                    ShowMessageFX.Information(null, "Exporting of report is successful", "Incentive's Report Export", null);
+                    return true;
+                } catch (IOException ex) {
+                    p_sMessage = ex.getMessage();
+                }
+            } else {
+                return true;
+            }
+        } catch (IOException | SQLException e) {
+            p_sMessage = e.getMessage();
+        }
+
+        p_sMessage = "An error occurred during the process.";
+        return false;
     }
 }
