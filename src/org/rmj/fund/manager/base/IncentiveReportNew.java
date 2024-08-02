@@ -1371,16 +1371,18 @@ public class IncentiveReportNew {
                     return true;
                 } catch (IOException ex) {
                     p_sMessage = ex.getMessage();
+                    return false;
                 }
             } else {
                 return true;
             }
         } catch (IOException | SQLException e) {
             p_sMessage = e.getMessage();
+            return false;
         }
 
-        p_sMessage = "An error occurred during the process.";
-        return false;
+//        p_sMessage = "An error occurred during the process.";
+//        return false;
     }
 
     private boolean ExportEmployeeCategoryData(Stage fsParentWindow) {
@@ -1455,7 +1457,7 @@ public class IncentiveReportNew {
                     newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
                     newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
                     newDetailRow.createCell(3).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
-                    newDetailRow.createCell(4 ).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
+                    newDetailRow.createCell(4).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
                     newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sMonthxxx"));
                 }
 
@@ -1500,15 +1502,17 @@ public class IncentiveReportNew {
                     return true;
                 } catch (IOException ex) {
                     p_sMessage = ex.getMessage();
+                    return false;
                 }
             } else {
                 return true;
             }
         } catch (IOException | SQLException e) {
             p_sMessage = e.getMessage();
+            return false;
         }
 
-        p_sMessage = "An error occurred during the process.";
-        return false;
+//        p_sMessage = "An error occurred during the process.";
+//        return false;
     }
 }
