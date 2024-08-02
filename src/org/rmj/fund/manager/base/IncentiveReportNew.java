@@ -445,11 +445,11 @@ public class IncentiveReportNew {
         }
         //division
         if (p_oDivision != null) {
-            lsCondition = MiscUtil.addCondition(lsCondition, "  sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
+            lsCondition = MiscUtil.addCondition(lsCondition, " sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
         }
         //incentive
         if (p_oCategory != null) {
-            lsCondition = MiscUtil.addCondition(lsCondition, "  sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
+            lsCondition = MiscUtil.addCondition(lsCondition, " sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
         }
         //area
         if (p_oBranchArea != null) {
