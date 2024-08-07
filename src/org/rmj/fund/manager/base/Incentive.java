@@ -2064,7 +2064,7 @@ public class Incentive {
             p_oDetail.updateRow();
         }
         
-        if (p_oListener != null) p_oListener.DetailRetreive(0, 0, "");
+//        if (p_oListener != null) p_oListener.DetailRetreive(0, 0, "");
     }
     
     private double getAllocatedIncentive(int fnRow, String fcByPercnt) throws SQLException{        
