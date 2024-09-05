@@ -1132,6 +1132,8 @@ public class Incentive {
         //find record based on incentive code and employee id
         int lnRow = getIncentiveEmployeeAllocationCount();
         
+        
+        
         for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
             p_oAllctn_Emp.absolute(lnCtr);
             
