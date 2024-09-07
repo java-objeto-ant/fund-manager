@@ -811,6 +811,20 @@ public class IncentiveReleaseNew {
                 return false;
             }
 
+            for (int lnCtr = 0; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+                lsSQL = "UPDATE Incentive_Master SET"
+                        + "  cTranStat = " + SQLUtil.toSQL("7")
+                        + " WHERE sTransNox = " + SQLUtil.toSQL((String) p_oDetail.get(lnCtr).getMaster("sTransNox"));
+                
+                if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, ((String) p_oDetail.get(lnCtr).getMaster("sTransNox")).substring(0, 4)) <= 0) {
+                    if (!p_bWithParent) {
+                        p_oApp.rollbackTrans();
+                    }
+                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    return false;
+                }
+
+            }
             if (p_oListener != null) {
                 p_oListener.MasterRetreive(8, "2");
             }
