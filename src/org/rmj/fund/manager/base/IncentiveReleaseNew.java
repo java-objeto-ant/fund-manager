@@ -5,6 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
@@ -323,11 +325,9 @@ public class IncentiveReleaseNew {
 
 //        lsCondition = "sTransNox LIKE " + SQLUtil.toSQL(p_oApp.getBranchCode() + "%");
 //        lsCondition = "sTransNox LIKE " + SQLUtil.toSQL(%");
-
 //        if (!lsSQL.isEmpty()) {
 //            lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
 //        }
-
         if (p_bWithUI) {
             JSONObject loJSON = showFXDialog.jsonSearch(
                     p_oApp,
@@ -764,4 +764,63 @@ public class IncentiveReleaseNew {
 
         return lnIndex;
     }
+
+    public boolean ReleaseTransaction() {
+        try {
+            if (p_oApp == null) {
+                p_sMessage = "Application driver is not set.";
+                return false;
+            }
+
+            if (p_nEditMode != EditMode.READY) {
+                p_sMessage = "Invalid update mode detected.";
+                return false;
+            }
+
+            p_sMessage = "";
+
+            if (p_bWithParent) {
+                p_sMessage = "Release transactions from other object is not allowed.";
+                return false;
+            }
+
+            if (((String) getMaster("cTranStat")).equals("0")) {
+                p_sMessage = "Transaction is not confirmed.";
+                return false;
+            }
+
+            if (((String) getMaster("cTranStat")).equals("2")) {
+                p_sMessage = "Unable to confirm already posted transactions.";
+                return false;
+            }
+
+            if (((String) getMaster("cTranStat")).equals("3")) {
+                p_sMessage = "Unable to confirm already cancelled transactions.";
+                return false;
+            }
+
+            String lsSQL;
+            lsSQL = "UPDATE " + MASTER_TABLE + " SET"
+                    + "  cTranStat = '2'"
+                    + ", sModified = " + SQLUtil.toSQL(p_oApp.getUserID())
+                    + ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate())
+                    + " WHERE sTransNox = " + SQLUtil.toSQL((String) getMaster("sTransNox"));
+
+            if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, ((String) getMaster("sTransNox")).substring(0, 4)) <= 0) {
+                p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
+                return false;
+            }
+
+            if (p_oListener != null) {
+                p_oListener.MasterRetreive(8, "2");
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(IncentiveReleaseNew.class.getName()).log(Level.SEVERE, null, ex);
+            p_sMessage = ex.getMessage();
+            return false;
+        }
+        p_nEditMode = EditMode.UNKNOWN;
+        return true;
+    }
+
 }
