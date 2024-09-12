@@ -675,6 +675,17 @@ public class IncentiveReleaseNew {
         return lsSQL;
     }
 
+    public String getSQ_BranchOthers() {
+        String lsSQL = "";
+
+        lsSQL = "SELECT"
+                + "  sBranchCD "
+                + " , cDivision"
+                + " FROM Branch_Others ";
+
+        return lsSQL;
+    }
+
     public boolean OpenDivision(String fsDivision) throws SQLException {
         p_nEditMode = EditMode.UNKNOWN;
 
@@ -691,6 +702,40 @@ public class IncentiveReleaseNew {
 
         //open master
         lsSQL = MiscUtil.addCondition(getSQ_Division(), "sDivsnCde = " + SQLUtil.toSQL(fsDivision));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oDivision = factory.createCachedRowSet();
+        p_oDivision.populate(loRS);
+        MiscUtil.close(loRS);
+
+        p_nEditMode = EditMode.READY;
+
+        return true;
+    }
+
+    public boolean getDivisionbyBranch(String fsBranch) throws SQLException {
+        p_nEditMode = EditMode.UNKNOWN;
+
+        if (p_oApp == null) {
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+
+        p_sMessage = "";
+
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+
+        lsSQL = MiscUtil.addCondition(getSQ_BranchOthers(), "sBranchCD = " + SQLUtil.toSQL(fsBranch));
+        loRS = p_oApp.executeQuery(lsSQL);
+
+        if (!loRS.next()) {
+            MiscUtil.close(loRS);
+            return false;
+        }
+
+        //open master
+        lsSQL = MiscUtil.addCondition(getSQ_Division(), "sDivsnCde = " + SQLUtil.toSQL(loRS.getString("cDivision")));
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDivision = factory.createCachedRowSet();
         p_oDivision.populate(loRS);
@@ -815,7 +860,7 @@ public class IncentiveReleaseNew {
                 lsSQL = "UPDATE Incentive_Master SET"
                         + "  cTranStat = " + SQLUtil.toSQL("7")
                         + " WHERE sTransNox = " + SQLUtil.toSQL((String) p_oDetail.get(lnCtr).getMaster("sTransNox"));
-                
+
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, ((String) p_oDetail.get(lnCtr).getMaster("sTransNox")).substring(0, 4)) <= 0) {
                     if (!p_bWithParent) {
                         p_oApp.rollbackTrans();
@@ -837,4 +882,40 @@ public class IncentiveReleaseNew {
         return true;
     }
 
+    public ResultSet getEmployeeDetail(String fsEmployID) throws SQLException {
+        p_sMessage = "";
+
+        String lsSQL;
+        ResultSet loRS;
+
+        //open master
+        lsSQL = MiscUtil.addCondition(getSQ_Employee(), "a.sEmployID = " + SQLUtil.toSQL(fsEmployID));
+        loRS = p_oApp.executeQuery(lsSQL);
+
+        if (!loRS.next()) {
+            MiscUtil.close(loRS);
+            return null;
+        }
+
+        return loRS;
+
+    }
+
+    private String getSQ_Employee() {
+        String lsSQL;
+
+        lsSQL = " SELECT "
+                + " a.sEmployID "
+                + ", b.sLastName "
+                + ", b.sFrstName "
+                + ", IFNULL(b.sMiddName, '') sMiddName "
+                + ", IFNULL(b.sMaidenNm, '') sMaidenNm "
+                + ", IFNULL(b.sEmailAdd, '') sEmailAdd "
+                + ", IFNULL(b.sMobileNo, '') sMobileNo "
+                + " FROM Employee_Master001 a "
+                + " LEFT JOIN Client_Master b "
+                + " ON a.sEmployID = b.sClientID ";
+
+        return lsSQL;
+    }
 }

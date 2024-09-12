@@ -430,7 +430,7 @@ public class Incentive {
         String lsCondition = "";
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
-            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())){
                 if (!p_oApp.getDepartment().equals(AUDITOR)) lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
             }
         } else{
@@ -2723,7 +2723,7 @@ public class Incentive {
             // validate if deduction amount allocated
             if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){          
 //                System.out.println("department  = " + p_oApp.getDepartment());
-                if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+                if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE+ "»" + MIS).contains(p_oApp.getDepartment())){
                     if (p_oApp.getDepartment().equals(AUDITOR)){
                         for(int lnctr = 1; lnctr <= getDeductionCount(); lnctr++){
                             double totlAmt = Double.parseDouble(getDeductionInfo(lnctr, 102).toString());
@@ -3011,7 +3011,7 @@ public class Incentive {
         }
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){          
             System.out.println("department  = " + p_oApp.getDepartment());
-            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS ).contains(p_oApp.getDepartment())){
                 if (p_oApp.getDepartment().equals(AUDITOR)){
                     lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
 //                    System.out.println("lsCondition  = " + lsCondition);
