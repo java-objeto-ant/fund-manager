@@ -199,8 +199,8 @@ public class Incentive {
                 lsSQL = MiscUtil.rowset2SQL(p_oAllctn, "Incentive_Detail_Allocation", "xInctvNme;xByPercnt");
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
-                    System.out.println("getMessage = " +  p_oApp.getMessage());
-                    System.out.println("getErrMsg = "  + p_oApp.getErrMsg());
+                    System.err.println("getMessage = " +  p_oApp.getMessage());
+                    System.err.println("getErrMsg = "  + p_oApp.getErrMsg());
                     if(p_oApp.getErrMsg().contains("Data truncation")){
                         p_sMessage = "Please check entry for Quantity Goal or Actual Goal!";
                     }else{
@@ -430,7 +430,7 @@ public class Incentive {
         String lsCondition = "";
         
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){            
-            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())){
                 if (!p_oApp.getDepartment().equals(AUDITOR)) lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
             }
         } else{
@@ -444,7 +444,7 @@ public class Incentive {
             lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%")); 
         }
         
-        System.out.println("search = " + lsSQL);
+//        System.out.println("search = " + lsSQL);
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                 p_oApp, 
@@ -512,7 +512,7 @@ public class Incentive {
         
         //open master
         lsSQL = getSQ_OpenMaster(" AND a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-        System.out.println(lsSQL);
+//        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
@@ -548,7 +548,7 @@ public class Incentive {
         
         //open deductions employee alloction
         lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction_Emp(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-        System.out.println(lsSQL);
+//        System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oDedctn_Emp = factory.createCachedRowSet();
         p_oDedctn_Emp.populate(loRS);
@@ -1132,6 +1132,8 @@ public class Incentive {
         //find record based on incentive code and employee id
         int lnRow = getIncentiveEmployeeAllocationCount();
         
+        
+        
         for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
             p_oAllctn_Emp.absolute(lnCtr);
             
@@ -1612,8 +1614,8 @@ public class Incentive {
                         fbByCode ? 0 : 1);
             
             if (loJSON != null){
-                System.out.println("sDeptIDxx = " +(String) loJSON.get("sDeptIDxx"));
-                System.out.println("sDeptName = " +(String) loJSON.get("sDeptName"));
+//                System.out.println("sDeptIDxx = " +(String) loJSON.get("sDeptIDxx"));
+//                System.out.println("sDeptName = " +(String) loJSON.get("sDeptName"));
                 p_oMaster.updateString("sDeptIDxx", (String) loJSON.get("sDeptIDxx"));
                 p_oMaster.updateString("xDeptName", (String) loJSON.get("sDeptName"));
                 p_oMaster.updateRow();
@@ -2064,7 +2066,7 @@ public class Incentive {
             p_oDetail.updateRow();
         }
         
-        if (p_oListener != null) p_oListener.DetailRetreive(0, 0, "");
+//        if (p_oListener != null) p_oListener.DetailRetreive(0, 0, "");
     }
     
     private double getAllocatedIncentive(int fnRow, String fcByPercnt) throws SQLException{        
@@ -2442,6 +2444,11 @@ public class Incentive {
         meta.setColumnLabel(10, "xDeductnx");
         meta.setColumnType(10, Types.DOUBLE);
         
+        
+        meta.setColumnName(11, "cRecdStat");
+        meta.setColumnLabel(11, "cRecdStat");
+        meta.setColumnType(11, Types.CHAR);
+        
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
         
@@ -2455,6 +2462,7 @@ public class Incentive {
         "    , IFNULL(a.sEmpLevID, '') xEmpLevID " +
         "    , IFNULL(a.sDeptIDxx, '') sDeptIDxx " +
         "    , IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(a.dStartEmp, a.dHiredxxx)) / 365), '') xSrvcYear " +
+        "    , a.cRecdStat " +
         " FROM Employee_Master001 a " +
         "     LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID " +
         "     LEFT JOIN Employee_Level c ON a.sEmpLevID = c.sEmpLevID " +
@@ -2515,6 +2523,7 @@ public class Incentive {
             p_oDetail.updateString("nTotalAmt", EncryptAmount(0.00));
             p_oDetail.updateDouble("xIncentve", 0.00);
             p_oDetail.updateDouble("xDeductnx", 0.00);
+            p_oDetail.updateString("cRecdStat", loRS.getString("cRecdStat"));
             
             
             p_oDetail.insertRow();
@@ -2668,13 +2677,13 @@ public class Incentive {
             return false;
         }
         
-        p_oDetail.beforeFirst();
-        while (p_oDetail.next()){            
-            if (DecryptAmount(p_oDetail.getString("nTotalAmt")) < 0.00){
-                p_sMessage = p_oDetail.getString("xEmployNm") + " has negative incentive total amount.";
-                return false;
-            }    
-        }
+//        p_oDetail.beforeFirst();
+//        while (p_oDetail.next()){            
+////            if (DecryptAmount(p_oDetail.getString("nTotalAmt")) < 0.00){
+////                p_sMessage = p_oDetail.getString("xEmployNm") + " has negative incentive total amount.";
+////                return false;
+////            }    
+//        }
         
         //validate incentive
         if (getIncentiveCount() == 0){
@@ -2713,8 +2722,8 @@ public class Incentive {
         if (getDeductionCount() > 0){
             // validate if deduction amount allocated
             if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){          
-                System.out.println("department  = " + p_oApp.getDepartment());
-                if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+//                System.out.println("department  = " + p_oApp.getDepartment());
+                if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE+ "»" + MIS).contains(p_oApp.getDepartment())){
                     if (p_oApp.getDepartment().equals(AUDITOR)){
                         for(int lnctr = 1; lnctr <= getDeductionCount(); lnctr++){
                             double totlAmt = Double.parseDouble(getDeductionInfo(lnctr, 102).toString());
@@ -2900,6 +2909,7 @@ public class Incentive {
                     ", IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(b.dStartEmp, b.dHiredxxx)) / 365), '') xSrvcYear" +
                     ", 0.00 xIncentve" +
                     ", 0.00 xDeductnx" +
+                    ", b.cRecdStat" +
                 " FROM Incentive_Detail a" +
                     ", Employee_Master001 b" +
                         " LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID" +
@@ -3001,10 +3011,10 @@ public class Incentive {
         }
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())){          
             System.out.println("department  = " + p_oApp.getDepartment());
-            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())){
+            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS ).contains(p_oApp.getDepartment())){
                 if (p_oApp.getDepartment().equals(AUDITOR)){
                     lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
-                    System.out.println("lsCondition  = " + lsCondition);
+//                    System.out.println("lsCondition  = " + lsCondition);
                 }
             }else{
                 lsCondition = lsCondition + " AND LEFT(a.sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
