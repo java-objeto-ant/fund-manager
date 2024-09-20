@@ -29,6 +29,7 @@ import org.rmj.fund.manager.parameters.IncentiveBankInfo;
 public class IncentiveReleaseNew {
 
     private final String FINANCE = "028";
+    private final String MIS = "026";
     private final String DEBUG_MODE = "app.debug.mode";
     private final String REQUIRE_CSS = "app.require.css.approval";
     private final String REQUIRE_CM = "app.require.cm.approval";
@@ -169,13 +170,6 @@ public class IncentiveReleaseNew {
             }
         }
 
-        if (!System.getProperty(DEBUG_MODE).equals("1")) {
-            if (p_oApp.getDepartment().equals(FINANCE)) {
-                p_sMessage = "User is not allowed to use this application.";
-                return false;
-            }
-        }
-
         p_sMessage = "";
 
         initMaster();
@@ -187,7 +181,7 @@ public class IncentiveReleaseNew {
         }
 
         if (System.getProperty(REQUIRE_CM).equals("1")) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd2 = '1'");
         }
 
         //retreive only untagged entries
@@ -445,6 +439,10 @@ public class IncentiveReleaseNew {
             p_sMessage = "Transaction was already confirmed.";
             return false;
         }
+        if (p_oApp.getUserLevel() < UserRight.SUPERVISOR) {
+                p_sMessage = "Your account level is not authorized to use this transaction.";
+            return false;
+        }
 
         if (((String) getMaster("cTranStat")).equals("2")) {
             p_sMessage = "Unable to confirm already posted transactions.";
@@ -560,8 +558,8 @@ public class IncentiveReleaseNew {
 
     private void loadConfig() {
         //update the value on configuration before deployment
-        System.setProperty(DEBUG_MODE, "1");
-        System.setProperty(REQUIRE_CSS, "1");
+        System.setProperty(DEBUG_MODE, "0");
+        System.setProperty(REQUIRE_CSS, "0");
         System.setProperty(REQUIRE_CM, "1");
     }
 
@@ -841,6 +839,11 @@ public class IncentiveReleaseNew {
 
             if (((String) getMaster("cTranStat")).equals("3")) {
                 p_sMessage = "Unable to confirm already cancelled transactions.";
+                return false;
+            }
+
+            if (p_oApp.getUserLevel() < UserRight.SUPERVISOR) {
+                p_sMessage = "Your account level is not authorized to use this transaction.";
                 return false;
             }
 

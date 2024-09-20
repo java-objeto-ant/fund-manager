@@ -36,6 +36,7 @@ import org.rmj.appdriver.constants.EditMode;
  */
 public class IncentiveReportNew {
 
+    private final String MIS = "026";
     private final String FINANCE = "028";
     private final String AUDITOR = "034";
     private final String COLLECTION = "022";
@@ -63,6 +64,7 @@ public class IncentiveReportNew {
 
     private String p_sMessage;
     private boolean p_bWithUI = true;
+    private boolean p_bAuditApproval;
 
     public IncentiveReportNew(GRider foApp, String fsBranchCd, boolean fbWithParent) {
         p_oApp = foApp;
@@ -73,22 +75,18 @@ public class IncentiveReportNew {
             p_sBranchCd = p_oApp.getBranchCode();
         }
 
-        loadConfig();
-
         p_nTranStat = 0;
-        p_nEditMode = EditMode.UNKNOWN;
-    }
+        p_bAuditApproval = false;
 
-    private void loadConfig() {
-        //update the value on configuration before deployment
-        System.setProperty(DEBUG_MODE, "0");
-        System.setProperty(REQUIRE_CSS, "0");
-        System.setProperty(REQUIRE_CM, "1");
-        System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
+        p_nEditMode = EditMode.UNKNOWN;
     }
 
     public void setTranStat(int fnValue) {
         p_nTranStat = fnValue;
+    }
+
+    public void setAuditApproval(boolean fbValue) {
+        p_bAuditApproval = fbValue;
     }
 
     public int getTranStats() {
@@ -430,12 +428,12 @@ public class IncentiveReportNew {
                 + " IFNULL(sDivsnDsc,'') sDivsnDsc, "
                 + " IFNULL(sAreaCode,'') sAreaCode, "
                 + " IFNULL(sAreaDesc,'') sAreaDesc, "
-                + " sCompnyNm, "
+                + " IFNULL(sCompnyNm,'') sCompnyNm, "
                 + " sEmployID, "
-                + " sEmpLevID, "
-                + " sEmpLevNm, "
-                + " sPositnID, "
-                + " sPositnNm, "
+                + " IFNULL(sEmpLevID,'') sEmpLevID, "
+                + " IFNULL(sEmpLevNm,'') sEmpLevNm, "
+                + " IFNULL(sPositnID,'') sPositnID, "
+                + " IFNULL(sPositnNm,'') sPositnNm, "
                 + " IFNULL(sBankName,'') sBankName, "
                 + " IFNULL(sBankAcct,'') sBankAcct, "
                 + " xSrvcYear, "
@@ -479,17 +477,17 @@ public class IncentiveReportNew {
                 + " n.sInctveDs sInctveDs, "
                 + " a.cTranStat cTranStat, "
                 + " a.cApprovd2 cApprovd2, "
-                + " gua_decrypt(b.nTotalAmt, " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nTotalAmt, "
+                + " gua_decrypt(b.nTotalAmt, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nTotalAmt, "
                 + " m.nAmtActlx nAmtActlx, "
                 + " m.nAmtGoalx nAmtGoalx, "
                 + " m.nQtyActlx nQtyActlx, "
                 + " m.nQtyGoalx nQtyGoalx, "
-                + " gua_decrypt(IFNULL(m.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299'), " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nInctvAmt, "
+                + " gua_decrypt(IFNULL(m.nInctvAmt, '1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nInctvAmt, "
                 + " l.nAllcPerc nAllcPerc , "
-                + " gua_decrypt(IFNULL(l.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299'), " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nAllcAmtx, "
-                + " gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nDedctAmt, "
+                + " gua_decrypt(IFNULL(l.nAllcAmtx, '1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nAllcAmtx, "
+                + " gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nDedctAmt, "
                 + " 0.0 xDedAlcPer, "
-                + " gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) xDedAlcAmt "
+                + " gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) xDedAlcAmt "
                 + " FROM Incentive_Master a "
                 + " JOIN Incentive_Detail b "
                 + " 	ON a.sTransNox = b.sTransNox "
@@ -543,17 +541,17 @@ public class IncentiveReportNew {
                 + " 	'Deduction' sInctveDs, "
                 + " 	a.cTranStat cTranStat, "
                 + " 	a.cApprovd2 cApprovd2, "
-                + " 	gua_decrypt(b.nTotalAmt, " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nTotalAmt, "
+                + " 	gua_decrypt(b.nTotalAmt, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nTotalAmt, "
                 + " 	0.0 nAmtActlx, "
                 + " 	0.0 nAmtGoalx, "
                 + " 	0.0 nQtyActlx, "
                 + " 	0.0 nQtyGoalx, "
-                + " 	gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " + SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nInctvAmt, "
+                + " 	gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nInctvAmt, "
                 + " 	0.0 nAllcPerc, "
-                + " 	gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nAllcAmtx, "
-                + " 	gua_decrypt(IFNULL(o.nDedctAmt , '1B09259D73D06C95C457CB3A89B03299'), " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) nDedctAmt, "
+                + " 	gua_decrypt('1B09259D73D06C95C457CB3A89B03299', " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nAllcAmtx, "
+                + " 	gua_decrypt(IFNULL(o.nDedctAmt , '1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) nDedctAmt, "
                 + " 	p.nAllcPerc xDedAlcPer, "
-                + " 	gua_decrypt(IFNULL(p.nAllcAmtx , '1B09259D73D06C95C457CB3A89B03299'), " +SQLUtil.toSQL(p_oApp.SIGNATURE) +" ) xDedAlcAmt "
+                + " 	gua_decrypt(IFNULL(p.nAllcAmtx , '1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + " ) xDedAlcAmt "
                 + " FROM Incentive_Master a  "
                 + " 	LEFT JOIN Incentive_Detail b "
                 + " 		ON a.sTransNox = b.sTransNox "
@@ -620,10 +618,17 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsCondition = MiscUtil.addCondition(lsCondition, "  cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            lsCondition = MiscUtil.addCondition(lsCondition, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat == 1) {
+                if (!p_bAuditApproval) {
+                    lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(0));
+                } else {
+                    lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(1));
+                }
 
+            }
         }
-        lsCondition = lsCondition + getConfigFilter();
+//        lsCondition = lsCondition + getConfigFilter();
         if (!isByBranch) {
             lsSQL = lsSQL + lsCondition + " ORDER BY sCompnyNm, sTransNox, sInctveCD ";
         } else {
@@ -655,32 +660,31 @@ public class IncentiveReportNew {
 //        }
 //        return lsCondition;
 //    }
-    private String getConfigFilter() {
-        String lsCondition = "";
-        String lsStat = String.valueOf(p_nTranStat);
-
-        System.out.println("department  = " + p_oApp.getDepartment());
-        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
-            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE).contains(p_oApp.getDepartment())) {
-                if (p_oApp.getDepartment().equals(AUDITOR)) {
-                    if (lsStat.equals("1")) {
-                        lsCondition = lsCondition + " AND cApprovd2 = '0'";
-                    } else if (lsStat.equals("2")) {
-                        lsCondition = lsCondition + " AND cApprovd2 = '1'";
-                    }
-                }
-            } else {
-                lsCondition = lsCondition + " AND LEFT(sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
-            }
-        } else {
-            lsCondition = lsCondition + " AND LEFT(sTransNox,4)  = " + SQLUtil.toSQL(p_oApp.getBranchCode());
-
-        }
-        return lsCondition;
-    }
-
+//    private String getConfigFilter() {
+//        String lsCondition = "";
+//        String lsStat = String.valueOf(p_nTranStat);
+//
+////        System.out.println("department  = " + p_oApp.getDepartment());
+//        if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
+//            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE+ "»" + MIS).contains(p_oApp.getDepartment())) {
+//                if (p_oApp.getDepartment().equals(AUDITOR)) {
+//                    if (lsStat.equals("1")) {
+//                        lsCondition = lsCondition + " AND cApprovd2 = '0'";
+//                    } else if (lsStat.equals("2")) {
+//                        lsCondition = lsCondition + " AND cApprovd2 = '1'";
+//                    }
+//                }
+//            } else {
+//                lsCondition = lsCondition + " AND LEFT(sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+//            }
+//        } else {
+//            lsCondition = lsCondition + " AND LEFT(sTransNox,4)  = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+//
+//        }
+//        return lsCondition;
+//    }
     private double DecryptAmount(String fsValue) {
-        return Double.valueOf(MySQLAESCrypt.Decrypt(fsValue,SQLUtil.toSQL(p_oApp.SIGNATURE)));
+        return Double.valueOf(MySQLAESCrypt.Decrypt(fsValue, SQLUtil.toSQL(p_oApp.SIGNATURE)));
     }
 
     private boolean DecryptIncentive() throws SQLException {
