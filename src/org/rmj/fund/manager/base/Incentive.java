@@ -3164,9 +3164,9 @@ public class Incentive {
 //            System.out.println("department  = " + p_oApp.getDepartment());
             if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
                 if (p_oApp.getDepartment().equals(AUDITOR)) {
-                    lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
+                    lsCondition = lsCondition + " AND a.cApprovd2 IN ('0','1')";
                 } else if (p_oApp.getDepartment().equals(COLLECTION)) {
-                    lsCondition = lsCondition + " AND a.cApprovd1 = '0'";
+                    lsCondition = lsCondition + " AND a.cApprovd1 IN ('0','1')";
                 }
             } else {
                 lsCondition = lsCondition + " AND LEFT(a.sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
