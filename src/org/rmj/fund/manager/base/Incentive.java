@@ -3161,7 +3161,7 @@ public class Incentive {
 
         }
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
-            System.out.println("department  = " + p_oApp.getDepartment());
+//            System.out.println("department  = " + p_oApp.getDepartment());
             if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
                 if (p_oApp.getDepartment().equals(AUDITOR)) {
                     lsCondition = lsCondition + " AND a.cApprovd2 = '0'";
