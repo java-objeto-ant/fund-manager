@@ -608,34 +608,51 @@ public class IncentiveBankInfo {
     
     private String getSQ_Record(){
         String lsSQL = "";
-        String lsStat = String.valueOf(p_nRecdStat);
+//        String lsStat = String.valueOf(p_nRecdStat);
         
-        if (lsStat.length() > 1){
-            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
-                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
-            }
-            
-            lsSQL = " AND a.cRecdStat IN (" + lsSQL.substring(2) + ")";
-        } else 
-            lsSQL = " AND a.cRecdStat = " + SQLUtil.toSQL(lsStat);
-        
-        lsSQL =  "SELECT" +
-                    "  a.sEmployID" +
-                    ", a.sBankIDxx" +
-                    ", a.sBankAcct" +
-                    ", a.cRecdStat" +
-                    ", a.sModified" +
-                    ", a.dModified" +
-                    ", c.sCompnyNm xEmployNm" +
-                    ", d.sBankName xBankName" +
-                " FROM " + MASTER_TABLE + " a" +
-                    ", Employee_Master001 b" +
-                    ", Client_Master c" +
-                    ", Banks d" +
-                " WHERE a.sEmployID = b.sEmployID" +
-                    " AND b.sEmployID = c.sClientID" +
-                    " AND a.sBankIDxx = d.sBankIDxx" +
-                    lsSQL;
+//        if (lsStat.length() > 1){
+//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+//            }
+//            
+//            lsSQL = " AND a.cRecdStat IN (" + lsSQL.substring(2) + ")";
+//        } else 
+//            lsSQL = " AND a.cRecdStat = " + SQLUtil.toSQL(lsStat);
+//        
+//        lsSQL =  "SELECT" +
+//                    "  a.sEmployID" +
+//                    ", a.sBankIDxx" +
+//                    ", a.sBankAcct" +
+//                    ", a.cRecdStat" +
+//                    ", a.sModified" +
+//                    ", a.dModified" +
+//                    ", c.sCompnyNm xEmployNm" +
+//                    ", d.sBankName xBankName" +
+//                " FROM " + MASTER_TABLE + " a" +
+//                    ", Employee_Master001 b" +
+//                    ", Client_Master c" +
+//                    ", Banks d" +
+//                " WHERE a.sEmployID = b.sEmployID" +
+//                    " AND b.sEmployID = c.sClientID" +
+//                    " AND a.sBankIDxx = d.sBankIDxx" +
+//                    lsSQL;
+
+                lsSQL =  "SELECT" +
+                  "  a.sEmployID"
+                + ", IFNULL(a.sBankIDxx, b.sBankIDxx) sBankIDxx"
+                + ", IFNULL(a.sBnkActNo, b.sBankAcct) sBankAcct"
+                + ", a.cRecdStat"
+                + ", a.sModified"
+                + ", a.dModified"
+                + ", c.sCompnyNm xEmployNm"
+                + ", d.sBankName xBankName"
+                + " FROM Employee_Master001 a"
+                + ", "+ MASTER_TABLE + " b"
+                + ", Client_Master c"
+                + ", Banks d"
+                + " WHERE a.sEmployID = b.sEmployID"
+                + " AND a.sEmployID = c.sClientID"
+                + " AND a.sBankIDxx = d.sBankIDxx";
         
         return lsSQL;
     }
