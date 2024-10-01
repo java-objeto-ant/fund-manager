@@ -24,10 +24,10 @@ import org.rmj.appdriver.constants.UserRight;
 import org.rmj.fund.manager.parameters.IncentiveBankInfo;
 
 /**
- * @author Michael Cuison
- * @since October 11, 2021
+ * @author Maynard Valencia
+ * @since 09/26/2026
  */
-public class Incentive {
+public class IncentiveNew {
 
     private final String FINANCE = "028";
     private final String AUDITOR = "034";
@@ -63,7 +63,7 @@ public class Incentive {
 
     private LMasDetTrans p_oListener;
 
-    public Incentive(GRider foApp, String fsBranchCd, boolean fbWithParent) {
+    public IncentiveNew(GRider foApp, String fsBranchCd, boolean fbWithParent) {
         p_oApp = foApp;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
@@ -192,7 +192,7 @@ public class Incentive {
                 p_oDetail.updateObject("nEntryNox", lnCtr);
                 p_oDetail.updateRow();
 
-                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Incentive_Detail", "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear;xIncentve;xDeductnx;cRecdStat");
+                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Incentive_Detail", "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear;xIncentve;xDeductnx");
 
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0) {
                     if (!p_bWithParent) {
@@ -2547,7 +2547,7 @@ public class Incentive {
 
     private void createDetail() throws SQLException {
         RowSetMetaData meta = new RowSetMetaDataImpl();
-        
+
         meta.setColumnCount(11);
 
         meta.setColumnName(1, "sTransNox");
@@ -2627,7 +2627,7 @@ public class Incentive {
                 + "    , IFNULL(h.sEmpLevID, '') xEmpLevID "
                 + "    , IFNULL(h.sDeptIDxx, '') sDeptIDxx "
                 + "    , IFNULL(ROUND(DATEDIFF(NOW(), IFNULL(h.dStartEmp, h.dHiredxxx)) / 365), '') xSrvcYear"
-                + "    , h.cRecdStat "
+                + "    , a.cRecdStat "
                 + "     FROM  Branch e"
                 + "	 ,Branch_Others f "
                 + "	 , Branch_Area g "
@@ -2640,8 +2640,6 @@ public class Incentive {
                 + "	AND  f.sAreaCode = g.sAreaCode"
                 + //        "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
                 " ORDER BY xEmpLevID DESC, xEmployNm";
-        
-        
         p_oMaster.first();
 //        
         if (!p_oMaster.getString("sBranchCd").isEmpty()) {
@@ -2949,33 +2947,8 @@ public class Incentive {
                 + "  Incentive_Master a"
                 + "  LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + "  LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd"
-                + " WHERE " + lsCondition().substring(4);
-//        lsSQL = "SELECT" + 
-//                    "  a.sTransNox" +
-//                    ", a.dTransact" +
-//                    ", a.sDeptIDxx" +
-//                    ", a.sMonthxxx" +
-//                    ", a.sRemarksx" +
-//                    ", a.sPrepared" +
-//                    ", a.dPrepared" +
-//                    ", a.cApprovd1" +
-//                    ", a.sApprovd1" +
-//                    ", a.dApprovd1" +
-//                    ", a.cApprovd2" +
-//                    ", a.sApprovd2" +
-//                    ", a.dApprovd2" +
-//                    ", a.sBatchNox" +
-//                    ", a.cTranStat" +
-//                    ", c.sBranchNm xBranchNm" +
-//                    ", IFNULL(b.sDeptName, '') xDeptName" +
-//                    ", IFNULL(a.sBranchCd,c.sBranchCd) sBranchCd" +
-//                " FROM Incentive_Master a" +
-//                        " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
-//                    " ,Branch c " +
-//                " WHERE  LEFT(a.sTransNox, 4) = c.sBranchCd" +
-//                " OR LEFT(a.sTransNox,4) = c.sBranchCd" + 
-//                     lsCondition() ;
-//        
+                + " WHERE " + getCondition().substring(4);
+       
         return lsSQL;
     }
 
@@ -3017,7 +2990,7 @@ public class Incentive {
                 + " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + ",Branch c "
                 + " WHERE a.sBranchCd = c.sBranchCd"
-                + lsCondition() + fsValue
+                + getCondition() + fsValue
                 + " UNION SELECT"
                 + "  a.sTransNox"
                 + ", a.dTransact"
@@ -3041,7 +3014,7 @@ public class Incentive {
                 + " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + ",Branch c "
                 + " WHERE c.sBranchCd = LEFT(a.sTransNox,4) "
-                + lsCondition() + fsValue + " LIMIT 1";
+                + getCondition() + fsValue + " LIMIT 1";
 
         return lsSQL;
 
@@ -3147,7 +3120,7 @@ public class Incentive {
                 + " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID";
     }
 
-    private String lsCondition() {
+    private String getCondition() {
         String lsStat = String.valueOf(p_nTranStat);
         String lsCondition = "";
         if (lsStat.length() > 1) {
