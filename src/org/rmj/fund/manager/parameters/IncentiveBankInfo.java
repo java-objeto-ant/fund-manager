@@ -637,22 +637,36 @@ public class IncentiveBankInfo {
 //                    " AND a.sBankIDxx = d.sBankIDxx" +
 //                    lsSQL;
 
-                lsSQL =  "SELECT" +
-                  "  a.sEmployID"
-                + ", IFNULL(a.sBankIDxx, b.sBankIDxx) sBankIDxx"
-                + ", IFNULL(a.sBnkActNo, b.sBankAcct) sBankAcct"
-                + ", a.cRecdStat"
-                + ", a.sModified"
-                + ", a.dModified"
-                + ", c.sCompnyNm xEmployNm"
-                + ", d.sBankName xBankName"
-                + " FROM Employee_Master001 a"
-                + ", "+ MASTER_TABLE + " b"
-                + ", Client_Master c"
-                + ", Banks d"
-                + " WHERE a.sEmployID = b.sEmployID"
-                + " AND a.sEmployID = c.sClientID"
-                + " AND a.sBankIDxx = d.sBankIDxx";
+//                lsSQL =  "SELECT" +
+//                  "  a.sEmployID"
+//                + ", IFNULL(a.sBankIDxx, b.sBankIDxx) sBankIDxx"
+//                + ", IFNULL(a.sBnkActNo, b.sBankAcct) sBankAcct"
+//                + ", a.cRecdStat"
+//                + ", a.sModified"
+//                + ", a.dModified"
+//                + ", c.sCompnyNm xEmployNm"
+//                + ", d.sBankName xBankName"
+//                + " FROM Employee_Master001 a"
+//                + ", "+ MASTER_TABLE + " b"
+//                + ", Client_Master c"
+//                + ", Banks d"
+//                + " WHERE a.sEmployID = b.sEmployID"
+//                + " AND a.sEmployID = c.sClientID"
+//                + " AND a.sBankIDxx = d.sBankIDxx";
+
+        lsSQL = "SELECT " +
+                    "  a.sEmployID " +
+                    ", IFNULL(a.sBankIDxx, '') sBankIDxx " +
+                    ", IFNULL(a.sBnkActNo, '') sBnkActNo" +
+                    ", a.cRecdStat " +
+                    ", a.sModified " +
+                    ", a.dModified " +
+                    ", b.sCompnyNm xEmployNm " +
+                    ", IfNull(c.sBankName,'') xBankName " +
+                " FROM Employee_Master001 a " +
+                        " LEFT JOIN Banks c ON a.sBankIDxx = c.sBankIDxx " +
+                    ", Client_Master b " +
+                " WHERE a.sEmployID = b.sClientID";
         
         return lsSQL;
     }
