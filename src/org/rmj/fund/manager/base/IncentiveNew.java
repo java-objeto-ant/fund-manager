@@ -775,9 +775,11 @@ public class IncentiveNew {
         }
 
         if (((String) getMaster("cTranStat")).equals("1")) {
-            if (System.getProperty(REQUIRE_CSS).equals("1")) {
-                if (((String) getMaster("cApprovd1")).equals("0")) {
-                    return ApprovedTransactionCSS();
+            if (getMaster("sTranNox").toString().contains("M0W1")) {
+                if (System.getProperty(REQUIRE_CSS).equals("1")) {
+                    if (((String) getMaster("cApprovd1")).equals("0")) {
+                        return ApprovedTransactionCSS();
+                    }
                 }
             }
 
@@ -878,9 +880,11 @@ public class IncentiveNew {
         }
 
         if (System.getProperty(REQUIRE_CSS).equals("1")) {
-            if (((String) getMaster("cApprovd1")).equals("0")) {
-                p_sMessage = "This transaction was not yet approved by CSS Department.";
-                return false;
+            if (getMaster("sTranNox").toString().contains("M0W1")) {
+                if (((String) getMaster("cApprovd1")).equals("0")) {
+                    p_sMessage = "This transaction was not yet approved by CSS Department.";
+                    return false;
+                }
             }
         }
         if (System.getProperty(REQUIRE_CM).equals("1")) {
@@ -2800,7 +2804,7 @@ public class IncentiveNew {
     }
 
     private boolean isEntryOK() throws SQLException {
-        
+
         if (System.getProperty(DEBUG_MODE).equals("0")) {
             if (!System.getProperty(ALLOWED_VERIFICATION_ON_APPROVAL).contains(p_oApp.getEmployeeNo())) {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
@@ -2948,7 +2952,7 @@ public class IncentiveNew {
                 + "  LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + "  LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd"
                 + " WHERE " + getCondition().substring(4);
-       
+
         return lsSQL;
     }
 
@@ -3168,7 +3172,7 @@ public class IncentiveNew {
     private void loadConfig() {
         //update the value on configuration before deployment
         System.setProperty(DEBUG_MODE, "0");
-        System.setProperty(REQUIRE_CSS, "0");
+        System.setProperty(REQUIRE_CSS, "1");
         System.setProperty(REQUIRE_CM, "1");
         System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
         System.setProperty(ALLOWED_VERIFICATION_ON_APPROVAL, "M00123000028»M00119000199»M00124001135");
