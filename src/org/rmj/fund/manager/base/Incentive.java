@@ -475,10 +475,13 @@ public class Incentive {
         String lsCondition = "";
 
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
+//            System.out.println(p_oApp.getDepartment());
             if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
                 if (!p_oApp.getDepartment().equals(AUDITOR)) {
                     lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
                 }
+            } else if (COLLECTION.equals(p_oApp.getDepartment())) {
+                lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
             }
         } else {
             if (!p_oApp.isMainOffice()) {
@@ -777,7 +780,9 @@ public class Incentive {
         if (((String) getMaster("cTranStat")).equals("1")) {
             if (System.getProperty(REQUIRE_CSS).equals("1")) {
                 if (((String) getMaster("cApprovd1")).equals("0")) {
-                    return ApprovedTransactionCSS();
+                    if (getMaster("sTransNox").toString().contains("M0W1")) {
+                        return ApprovedTransactionCSS();
+                    }
                 }
             }
 
@@ -966,7 +971,10 @@ public class Incentive {
             p_sMessage = "Approving transactions from other object is not allowed.";
             return false;
         }
-
+        if (p_oApp.getDepartment().equals(AUDITOR)) {
+            p_sMessage = "CSS Approval is Required for this transaction.";
+            return false;
+        }
         if (!p_oApp.getDepartment().equals(COLLECTION)) {
             p_sMessage = "Only CSS Department can use this feature.";
             return false;
@@ -2547,7 +2555,7 @@ public class Incentive {
 
     private void createDetail() throws SQLException {
         RowSetMetaData meta = new RowSetMetaDataImpl();
-        
+
         meta.setColumnCount(11);
 
         meta.setColumnName(1, "sTransNox");
@@ -2640,8 +2648,7 @@ public class Incentive {
                 + "	AND  f.sAreaCode = g.sAreaCode"
                 + //        "	AND e.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd) +
                 " ORDER BY xEmpLevID DESC, xEmployNm";
-        
-        
+
         p_oMaster.first();
 //        
         if (!p_oMaster.getString("sBranchCd").isEmpty()) {
@@ -2802,7 +2809,7 @@ public class Incentive {
     }
 
     private boolean isEntryOK() throws SQLException {
-        
+
         if (System.getProperty(DEBUG_MODE).equals("0")) {
             if (!System.getProperty(ALLOWED_VERIFICATION_ON_APPROVAL).contains(p_oApp.getEmployeeNo())) {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
@@ -3195,7 +3202,7 @@ public class Incentive {
     private void loadConfig() {
         //update the value on configuration before deployment
         System.setProperty(DEBUG_MODE, "0");
-        System.setProperty(REQUIRE_CSS, "0");
+        System.setProperty(REQUIRE_CSS, "1");
         System.setProperty(REQUIRE_CM, "1");
         System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
         System.setProperty(ALLOWED_VERIFICATION_ON_APPROVAL, "M00123000028»M00119000199»M00124001135");
