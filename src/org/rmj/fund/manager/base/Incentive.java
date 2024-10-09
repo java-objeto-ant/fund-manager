@@ -980,6 +980,11 @@ public class Incentive {
             return false;
         }
 
+        if (!p_oApp.getEmployeeNo().equals("M00109011794")) {
+            p_sMessage = "Only authorized employee is allowed to approved this transactions";
+            return false;
+        }
+
         if (((String) getMaster("cTranStat")).equals("0")) {
             p_sMessage = "Unable to approve unconfirmed transactions.";
             return false;
@@ -2956,7 +2961,7 @@ public class Incentive {
                 + "  Incentive_Master a"
                 + "  LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + "  LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd"
-                + " WHERE " + lsCondition().substring(4);
+                + " WHERE " + getCondtion().substring(4);
 //        lsSQL = "SELECT" + 
 //                    "  a.sTransNox" +
 //                    ", a.dTransact" +
@@ -3024,7 +3029,7 @@ public class Incentive {
                 + " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + ",Branch c "
                 + " WHERE a.sBranchCd = c.sBranchCd"
-                + lsCondition() + fsValue
+                + getCondtion() + fsValue
                 + " UNION SELECT"
                 + "  a.sTransNox"
                 + ", a.dTransact"
@@ -3048,7 +3053,7 @@ public class Incentive {
                 + " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
                 + ",Branch c "
                 + " WHERE c.sBranchCd = LEFT(a.sTransNox,4) "
-                + lsCondition() + fsValue + " LIMIT 1";
+                + getCondtion() + fsValue + " LIMIT 1";
 
         return lsSQL;
 
@@ -3154,7 +3159,7 @@ public class Incentive {
                 + " LEFT JOIN Client_Master b ON a.sEmployID = b.sClientID";
     }
 
-    private String lsCondition() {
+    private String getCondtion() {
         String lsStat = String.valueOf(p_nTranStat);
         String lsCondition = "";
         if (lsStat.length() > 1) {
@@ -3171,9 +3176,13 @@ public class Incentive {
 //            System.out.println("department  = " + p_oApp.getDepartment());
             if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
                 if (p_oApp.getDepartment().equals(AUDITOR)) {
-                    lsCondition = lsCondition + " AND a.cApprovd2 IN ('0','1')";
+                    if (lsStat.equals("1")) {//load only not approved confirmation form
+                        lsCondition = lsCondition + " AND a.cApprovd2 IN ('0')";
+                    }
                 } else if (p_oApp.getDepartment().equals(COLLECTION)) {
-                    lsCondition = lsCondition + " AND a.cApprovd1 IN ('0','1')";
+                    if (lsStat.equals("1")) {//load only not approved confirmation form
+                        lsCondition = lsCondition + " AND a.cApprovd1 IN ('0')";
+                    }
                 }
             } else {
                 lsCondition = lsCondition + " AND LEFT(a.sTransNox,4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
@@ -3202,6 +3211,7 @@ public class Incentive {
     private void loadConfig() {
         //update the value on configuration before deployment
         System.setProperty(DEBUG_MODE, "0");
+
         System.setProperty(REQUIRE_CSS, "1");
         System.setProperty(REQUIRE_CM, "1");
         System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
