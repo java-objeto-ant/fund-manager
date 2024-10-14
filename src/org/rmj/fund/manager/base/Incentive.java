@@ -881,11 +881,12 @@ public class Incentive {
             p_sMessage = "Unable to post cancelled transactions.";
             return false;
         }
-
-        if (System.getProperty(REQUIRE_CSS).equals("1")) {
-            if (((String) getMaster("cApprovd1")).equals("0")) {
-                p_sMessage = "This transaction was not yet approved by CSS Department.";
-                return false;
+        if (getMaster("sTransNox").toString().contains("M0W1")) {
+            if (System.getProperty(REQUIRE_CSS).equals("1")) {
+                if (((String) getMaster("cApprovd1")).equals("0")) {
+                    p_sMessage = "This transaction was not yet approved by CSS Department.";
+                    return false;
+                }
             }
         }
         if (System.getProperty(REQUIRE_CM).equals("1")) {
@@ -1053,11 +1054,12 @@ public class Incentive {
             p_sMessage = "Unable to approve cancelled transactions.";
             return false;
         }
-
-        if (System.getProperty(REQUIRE_CSS).equals("1")) {
-            if (((String) getMaster("cApprovd1")).equals("0")) {
-                p_sMessage = "This transaction was not yet approved by CSS Department.";
-                return false;
+        if (getMaster("sTransNox").toString().contains("M0W1")) {
+            if (System.getProperty(REQUIRE_CSS).equals("1")) {
+                if (((String) getMaster("cApprovd1")).equals("0")) {
+                    p_sMessage = "This transaction was not yet approved by CSS Department.";
+                    return false;
+                }
             }
         }
 
