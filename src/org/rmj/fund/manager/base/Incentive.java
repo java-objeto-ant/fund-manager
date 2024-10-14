@@ -1053,34 +1053,37 @@ public class Incentive {
             p_sMessage = "Unable to approve cancelled transactions.";
             return false;
         }
-
-        if (System.getProperty(REQUIRE_CSS).equals("1")) {
-            if (((String) getMaster("cApprovd1")).equals("0")) {
-                p_sMessage = "This transaction was not yet approved by CSS Department.";
-                return false;
+        if (getMaster("sTransNox").toString().contains("M0W1")) {
+            if (System.getProperty(REQUIRE_CSS).equals("1")) {
+                if (((String) getMaster("cApprovd1")).equals("0")) {
+                    p_sMessage = "This transaction was not yet approved by CSS Department.";
+                    return false;
+                }
             }
         }
+        
+            if (((String) getMaster("cApprovd2")).equals("1")) {
+                p_sMessage = "This transaction was already approved by your Department.";
+                return false;
+            }
 
-        if (((String) getMaster("cApprovd2")).equals("1")) {
-            p_sMessage = "This transaction was already approved by your Department.";
-            return false;
+            String lsTransNox = (String) getMaster("sTransNox");
+            String lsSQL = "UPDATE Incentive_Master SET"
+                    + "  cApprovd2 = '1'"
+                    + ", sApprovd2 = " + SQLUtil.toSQL(p_oApp.getUserID())
+                    + ", dApprovd2 = " + SQLUtil.toSQL(p_oApp.getServerDate())
+                    + " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
+
+            if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0) {
+                p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
+                return false;
+            }
+
+            p_nEditMode = EditMode.UNKNOWN;
+            return true;
         }
 
-        String lsTransNox = (String) getMaster("sTransNox");
-        String lsSQL = "UPDATE Incentive_Master SET"
-                + "  cApprovd2 = '1'"
-                + ", sApprovd2 = " + SQLUtil.toSQL(p_oApp.getUserID())
-                + ", dApprovd2 = " + SQLUtil.toSQL(p_oApp.getServerDate())
-                + " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
-
-        if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0) {
-            p_sMessage = p_oApp.getErrMsg() + "; " + p_oApp.getMessage();
-            return false;
-        }
-
-        p_nEditMode = EditMode.UNKNOWN;
-        return true;
-    }
+    
 
     public int getDeductionCount() throws SQLException {
         p_oDedctn.last();
