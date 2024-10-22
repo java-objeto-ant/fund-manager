@@ -1,6 +1,7 @@
 package org.rmj.fund.manager.base;
 
 import com.sun.rowset.CachedRowSetImpl;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.sql.SQLException;
@@ -16,6 +17,7 @@ import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.MySQLAESCrypt;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.StringUtil;
+import org.rmj.appdriver.agentfx.CommonUtils;
 import org.rmj.appdriver.agentfx.ShowMessageFX;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
@@ -366,7 +368,22 @@ public class Incentive {
                 }
             }
 
-            if (getDeductionCount() > 0) {
+            ResultSet loRS;
+            CachedRowSet l_oSubDedctn;
+            CachedRowSet l_oSubDedctnEmp;
+            RowSetFactory factory = RowSetProvider.newFactory();
+
+            //open deductions
+            lsSQL = MiscUtil.addCondition(getSQ_Detail_Deduction(), "sTransNox = " + SQLUtil.toSQL(lsTransNox));
+            loRS = p_oApp.executeQuery(lsSQL);
+            l_oSubDedctn = factory.createCachedRowSet();
+            l_oSubDedctn.populate(loRS);
+            MiscUtil.close(loRS);
+
+            l_oSubDedctn.last();
+            int loSubDedctnSize = l_oSubDedctn.getRow();
+            
+            if (loSubDedctnSize > 0 || getDeductionCount() > 0) {
                 p_oDedctn.beforeFirst();
                 while (p_oDedctn.next()) {
                     if (p_oDedctn.getString("xNewValue").equalsIgnoreCase("0")) {
@@ -403,7 +420,6 @@ public class Incentive {
                     }
 
                 }
-
                 p_oDedctn_Emp.beforeFirst();
                 while (p_oDedctn_Emp.next()) {
                     if (p_oDedctn_Emp.getString("nNewValue").equalsIgnoreCase("0")) {
@@ -439,6 +455,40 @@ public class Incentive {
                         }
                     }
                 }
+                if (loSubDedctnSize != getDeductionCount()) {
+                    for (int lnCtr2 = getDeductionCount()+ 1; lnCtr2 <= loSubDedctnSize; lnCtr2++) {
+                        lsSQL = "DELETE FROM Incentive_Detail_Ded_Allocation " 
+                                + " WHERE sTransNox = " + SQLUtil.toSQL(l_oSubDedctn.getString("sTransNox"))
+                                + " AND nEntryNox = " + l_oSubDedctn.getInt("nEntryNox");
+
+                        if (!lsSQL.isEmpty()) {
+                            if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0) {
+                                if (!p_bWithParent) {
+                                    p_oApp.rollbackTrans();
+                                }
+                                p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                                return false;
+                            }
+                        }
+                        
+                        lsSQL = "DELETE FROM Incentive_Detail_Ded_Allocation_Employee " 
+                                + " WHERE sTransNox = " + SQLUtil.toSQL(l_oSubDedctn.getString("sTransNox"))
+                                + " AND nEntryNox = " + l_oSubDedctn.getInt("nEntryNox");
+
+                        if (!lsSQL.isEmpty()) {
+                            if (p_oApp.executeQuery(lsSQL, "Incentive_Detail_Ded_Allocation", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0) {
+                                if (!p_bWithParent) {
+                                    p_oApp.rollbackTrans();
+                                }
+                                p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                                return false;
+                            }
+                        }
+                    }
+
+                }
+
+                
             }
 
             if (!p_bWithParent) {
@@ -1425,17 +1475,34 @@ public class Incentive {
         if (fnRow == 0 || getDeductionCount() == 0) {
             return null;
         }
+        double lnxAllocAmt;
+        double lnxAllocPer;
+        double lnnDedctAmt;
 
         p_oDedctn.absolute(fnRow);
         switch (fnIndex) {
             case 4: //nDedctAmt
-                return DecryptAmount(p_oDedctn.getString("nDedctAmt"));
+                lnnDedctAmt = Double.valueOf(DecryptAmount(p_oDedctn.getString("nDedctAmt")));
+                lnnDedctAmt = Double.valueOf(CommonUtils.NumberFormat(lnnDedctAmt, "0.00"));
+                return lnnDedctAmt;
             case 101: //xAllocPer
-                return ((getAllocatedDeduction(fnRow, "0")
-                        + ((DecryptAmount(p_oDedctn.getString("nDedctAmt")) - getAllocatedDeduction(fnRow, "0")) * getAllocatedDeduction(fnRow, "1") / 100)) / DecryptAmount(p_oDedctn.getString("nDedctAmt")) * 100);
+                lnxAllocPer = ((getAllocatedDeduction(fnRow, "0")
+                        + ((DecryptAmount(p_oDedctn.getString("nDedctAmt"))
+                        - getAllocatedDeduction(fnRow, "0"))
+                        * getAllocatedDeduction(fnRow, "1")
+                        / 100)) / DecryptAmount(p_oDedctn.getString("nDedctAmt"))
+                        * 100);
+                lnxAllocPer = Double.valueOf(CommonUtils.NumberFormat(lnxAllocPer, "0.00"));
+                return lnxAllocPer;
             case 102: //xAllocAmt
-                return getAllocatedDeduction(fnRow, "0")
-                        + ((DecryptAmount(p_oDedctn.getString("nDedctAmt")) - getAllocatedDeduction(fnRow, "0")) * getAllocatedDeduction(fnRow, "1") / 100);
+                lnxAllocAmt = getAllocatedDeduction(fnRow, "0")
+                        + ((DecryptAmount(p_oDedctn.getString("nDedctAmt"))
+                        - getAllocatedDeduction(fnRow, "0"))
+                        * getAllocatedDeduction(fnRow, "1")
+                        / 100);
+                lnxAllocAmt = Double.valueOf(CommonUtils.NumberFormat(lnxAllocAmt, "0.00"));
+
+                return lnxAllocAmt;
             default:
                 return p_oDedctn.getObject(fnIndex);
         }
