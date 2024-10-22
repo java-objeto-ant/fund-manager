@@ -114,7 +114,11 @@ public class Incentive {
         }
 
         if (System.getProperty(DEBUG_MODE).equals("0")) {
+
             if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
+                p_sMessage = "Your employee level is not authorized to use this transaction.";
+                return false;
+            } else if (!("036" +"»"+"015").contains(p_oApp.getDepartment())) {
                 p_sMessage = "Your employee level is not authorized to use this transaction.";
                 return false;
             }
@@ -382,7 +386,7 @@ public class Incentive {
 
             l_oSubDedctn.last();
             int loSubDedctnSize = l_oSubDedctn.getRow();
-            
+
             if (loSubDedctnSize > 0 || getDeductionCount() > 0) {
                 p_oDedctn.beforeFirst();
                 while (p_oDedctn.next()) {
@@ -456,8 +460,8 @@ public class Incentive {
                     }
                 }
                 if (loSubDedctnSize != getDeductionCount()) {
-                    for (int lnCtr2 = getDeductionCount()+ 1; lnCtr2 <= loSubDedctnSize; lnCtr2++) {
-                        lsSQL = "DELETE FROM Incentive_Detail_Ded_Allocation " 
+                    for (int lnCtr2 = getDeductionCount() + 1; lnCtr2 <= loSubDedctnSize; lnCtr2++) {
+                        lsSQL = "DELETE FROM Incentive_Detail_Ded_Allocation "
                                 + " WHERE sTransNox = " + SQLUtil.toSQL(l_oSubDedctn.getString("sTransNox"))
                                 + " AND nEntryNox = " + l_oSubDedctn.getInt("nEntryNox");
 
@@ -470,8 +474,8 @@ public class Incentive {
                                 return false;
                             }
                         }
-                        
-                        lsSQL = "DELETE FROM Incentive_Detail_Ded_Allocation_Employee " 
+
+                        lsSQL = "DELETE FROM Incentive_Detail_Ded_Allocation_Employee "
                                 + " WHERE sTransNox = " + SQLUtil.toSQL(l_oSubDedctn.getString("sTransNox"))
                                 + " AND nEntryNox = " + l_oSubDedctn.getInt("nEntryNox");
 
@@ -488,7 +492,6 @@ public class Incentive {
 
                 }
 
-                
             }
 
             if (!p_bWithParent) {
