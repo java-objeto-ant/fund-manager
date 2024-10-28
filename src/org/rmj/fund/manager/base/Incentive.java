@@ -516,7 +516,7 @@ public class Incentive {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
-                }else if (!("036" + "»" + "015").contains(p_oApp.getDepartment())) {
+                }else if (!("036" + "»" + "015"+ MIS).contains(p_oApp.getDepartment())) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
                 }
@@ -609,7 +609,7 @@ public class Incentive {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
-                }else if (!("036" + "»" + "015").contains(p_oApp.getDepartment())) {
+                }else if (!("036" + "»" + "015" + MIS).contains(p_oApp.getDepartment())) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
                 }
