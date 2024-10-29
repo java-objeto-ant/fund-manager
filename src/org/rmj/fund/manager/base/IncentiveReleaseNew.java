@@ -176,9 +176,9 @@ public class IncentiveReleaseNew {
 
         String lsSQL = getSQ_Detail();
 
-        if (System.getProperty(REQUIRE_CSS).equals("1")) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
-        }
+//        if (System.getProperty(REQUIRE_CSS).equals("1")) {
+//            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
+//        }
 
         if (System.getProperty(REQUIRE_CM).equals("1")) {
             lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd2 = '1'");
@@ -389,6 +389,7 @@ public class IncentiveReleaseNew {
 
         //open master
         lsSQL = MiscUtil.addCondition(getSQ_Master(), "sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        System.out.print(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
@@ -400,6 +401,7 @@ public class IncentiveReleaseNew {
         }
 
         lsSQL = MiscUtil.addCondition(getSQ_Detail(), "a.sBatchNox = " + SQLUtil.toSQL(fsTransNox));
+        System.out.print(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
 
         p_oDetail = new ArrayList();
