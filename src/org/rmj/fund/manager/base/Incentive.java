@@ -3302,7 +3302,7 @@ public class Incentive {
         System.setProperty(REQUIRE_CSS, "1");
         System.setProperty(REQUIRE_CM, "1");
         System.setProperty(REQUIRE_BANK_ON_APPROVAL, "0");
-        System.setProperty(ALLOWED_VERIFICATION_ON_APPROVAL, "M00123000028»M00119000199»M00124001135");
+        System.setProperty(ALLOWED_VERIFICATION_ON_APPROVAL, "M00123000028»M00119000199»M00124001135»M00124000848");
         ;
 
     }

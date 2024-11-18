@@ -15,13 +15,16 @@
         <group name="Incentive">
             <file>file:/D:/Guanzon/GMC%20SEG%20Folder%20-%20Java/fund-manager/src/org/rmj/fund/manager/base/Incentive.java</file>
         </group>
-        <group name="integsys-main">
-            <file>file:/C:/Users/Maynard/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/IncentiveReportNew.java</file>
-            <file>file:/C:/Users/Maynard/Documents/GitHub/fund-manager/src/org/rmj/fund/manager/base/IncentiveReportss.java</file>
-        </group>
+        <group name="integsys-main"/>
         <group name="LP Integsys">
             <file>file:/D:/GMC_SEG_Folder%20-%20Maven/Integsys/fund-manager/src/org/rmj/fund/manager/base/IncentiveReleaseNew.java</file>
             <file>file:/D:/GMC_SEG_Folder%20-%20Maven/Integsys/fund-manager/src/org/rmj/fund/manager/base/Incentive.java</file>
+        </group>
+        <group name="IntegSys - Java">
+            <file>file:/D:/000MNVProject/IntegSys%20Java/fund-manager/src/org/rmj/fund/manager/base/IncentiveReportNew.java</file>
+        </group>
+        <group name="Los Pedritos - IntegSys - Java">
+            <file>file:/D:/000MNVProject/IntegSys%20Java/fund-manager/src/org/rmj/fund/manager/base/IncentiveReportNew.java</file>
         </group>
     </open-files>
 </project-private>
