@@ -1507,6 +1507,10 @@ public class Incentive {
                         * getAllocatedDeduction(fnRow, "1")
                         / 100)) / DecryptAmount(p_oDedctn.getString("nDedctAmt"))
                         * 100);
+                
+                if (String.valueOf(lnxAllocPer).equals("NaN")){
+                return "NaN";
+                }
                 lnxAllocPer = Double.valueOf(CommonUtils.NumberFormat(lnxAllocPer, "0.00"));
                 return lnxAllocPer;
             case 102: //xAllocAmt
