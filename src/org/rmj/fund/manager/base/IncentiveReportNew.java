@@ -585,6 +585,123 @@ public class IncentiveReportNew {
         return lsSQL;
     }
 
+    private String getSQ_RecordDetail(String fsMonth) {
+        String lsSQL;
+        lsSQL = "SELECT "
+                + " IFNULL (sAreaDesc, '') sAreaDesc,"
+                + " IFNULL (sBranchNm, '') sBranchNm,"
+                + " sTransNox,"
+                + " sMonthxxx,"
+                + " IFNULL (sCompnyNm, '') sCompnyNm,"
+                + " IFNULL (sPositnNm, '') sPositnNm,"
+                + " sInctveCD,"
+                + " sInctveDs,"
+                + " nAmtActlx,"
+                + " nInctvAmt,"
+                + " nAllcPerc,"
+                + " nAllcAmtx,"
+                + " xTAllcAmt,"
+                + " cTranStat,"
+                + " cApprovd1,"
+                + " cApprovd2,"
+                + " sBranchCd"
+                + " FROM"
+                + " (SELECT"
+                + " q.sAreaDesc sAreaDesc,"
+                + " g.sBranchNm sBranchNm,"
+                + " a.sTransNox sTransNox,"
+                + " a.sMonthxxx sMonthxxx,"
+                + " d.sCompnyNm sCompnyNm,"
+                + " e.sPositnNm sPositnNm,"
+                + " n.sInctveCD sInctveCD,"
+                + " n.sInctveDs sInctveDs,"
+                + " m.nAmtActlx nAmtActlx,"
+                + " gua_decrypt (IFNULL (m.nInctvAmt,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") nInctvAmt,"
+                + " l.nAllcPerc nAllcPerc,"
+                + " gua_decrypt (IFNULL (l.nAllcAmtx,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") nAllcAmtx,"
+                + " (gua_decrypt(IFNULL (m.nInctvAmt,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (l.nAllcPerc / 100))"
+                + " + gua_decrypt(IFNULL (l.nAllcAmtx,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") xTAllcAmt,"
+                + " a.cTranStat cTranStat,"
+                + " a.cApprovd1 cApprovd1,"
+                + " a.cApprovd2 cApprovd2,"
+                + " g.sBranchCd sBranchCd"
+                + " FROM"
+                + " Incentive_Master a"
+                + " JOIN Incentive_Detail b"
+                + "   ON a.sTransNox = b.sTransNox"
+                + " LEFT JOIN Employee_Master001 c"
+                + "   ON b.sEmployID = c.sEmployID"
+                + " LEFT JOIN Client_Master d"
+                + "   ON b.sEmployID = d.sClientID"
+                + " LEFT JOIN `Position` e"
+                + "   ON c.sPositnID = e.sPositnID"
+                + " LEFT JOIN Employee_Level f"
+                + "   ON c.sEmpLevID = f.sEmpLevID"
+                + " LEFT JOIN Branch g"
+                + "   ON a.sBranchCd = g.sBranchCd"
+                + " LEFT JOIN Branch_Others h"
+                + "   ON g.sBranchCd = h.sBranchCD"
+                + " LEFT JOIN Branch_Area q"
+                + "   ON h.sAreaCode = q.sAreaCode"
+                + " LEFT JOIN Division i"
+                + "   ON h.cDivision = i.sDivsnCde"
+                + " LEFT JOIN Incentive_Detail_Allocation_Employee l"
+                + "   ON b.sTransNox = l.sTransNox AND b.sEmployID = l.sEmployID"
+                + " LEFT JOIN Incentive_Detail_Allocation m"
+                + "   ON l.sTransNox = m.sTransNox AND l.sInctveCD = m.sInctveCD"
+                + " LEFT JOIN Incentive n"
+                + "   ON m.sInctveCD = n.sInctveCD"
+                + " WHERE l.sTransNox IS NOT NULL AND a.sMonthxxx =" + SQLUtil.toSQL(fsMonth)
+                + " UNION "
+                + " SELECT"
+                + " q.sAreaDesc sAreaDesc,"
+                + " g.sBranchNm sBranchNm,"
+                + " a.sTransNox sTransNox,"
+                + " a.sMonthxxx sMonthxxx,"
+                + " d.sCompnyNm sCompnyNm,"
+                + " e.sPositnNm sPositnNm,"
+                + " '999' sInctveCD,"
+                + " CONCAT('Deduction ', o.sRemarksx)  sInctveDs, "
+                + " gua_decrypt (IFNULL (o.nDedctAmt,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") nAmtActlx,"
+                + " gua_decrypt (IFNULL (o.nDedctAmt,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") nInctvAmt,"
+                + " p.nAllcPerc nAllcPerc,"
+                + " gua_decrypt (IFNULL (p.nAllcAmtx,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") nAllcAmtx,"
+                + " (gua_decrypt (IFNULL (o.nDedctAmt,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (p.nAllcPerc / 100))"
+                + " + gua_decrypt(IFNULL (p.nAllcAmtx,'1B09259D73D06C95C457CB3A89B03299'), " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") xTAllcAmt,"
+                + " a.cTranStat cTranStat,"
+                + " a.cApprovd1 cApprovd1,"
+                + " a.cApprovd2 cApprovd2,"
+                + " g.sBranchCd sBranchCd"
+                + " FROM"
+                + " Incentive_Master a"
+                + " LEFT JOIN Incentive_Detail b"
+                + "  ON a.sTransNox = b.sTransNox"
+                + " LEFT JOIN Employee_Master001 c"
+                + "  ON b.sEmployID = c.sEmployID"
+                + " LEFT JOIN Client_Master d"
+                + "  ON b.sEmployID = d.sClientID"
+                + " LEFT JOIN `Position` e"
+                + "  ON c.sPositnID = e.sPositnID"
+                + " LEFT JOIN Employee_Level f"
+                + "  ON c.sEmpLevID = f.sEmpLevID"
+                + " LEFT JOIN Branch g"
+                + "  ON a.sBranchCd = g.sBranchCd"
+                + " LEFT JOIN Branch_Others h"
+                + "  ON g.sBranchCd = h.sBranchCD"
+                + " LEFT JOIN Branch_Area q"
+                + "  ON h.sAreaCode = q.sAreaCode"
+                + " LEFT JOIN Division i"
+                + "  ON h.cDivision = i.sDivsnCde"
+                + " LEFT JOIN Incentive_Detail_Ded_Allocation o"
+                + "  ON a.sTransNox = o.sTransNox"
+                + " LEFT JOIN Incentive_Detail_Ded_Allocation_Employee p"
+                + "  ON o.sTransNox = p.sTransNox AND o.nEntryNox = p.nEntryNox AND b.sEmployID = p.sEmployID"
+                + " WHERE o.sTransNox IS NOT NULL AND a.sMonthxxx =" + SQLUtil.toSQL(fsMonth)
+                + " GROUP BY a.sTransNox, p.sEmployID, o.nEntryNox) Incentive";
+
+        return lsSQL;
+    }
+
     public boolean OpenRecord(String fsValue, boolean isByBranch) throws SQLException {
 
         if (p_oApp == null) {
@@ -642,6 +759,70 @@ public class IncentiveReportNew {
         MiscUtil.close(loRS);
 
         loRS = p_oApp.executeQuery(getSQ_Record() + " WHERE 0=1");
+        p_oRecordProcessed = factory.createCachedRowSet();
+        p_oRecordProcessed.populate(loRS);
+        MiscUtil.close(loRS);
+
+        return DecryptIncentive();
+    }
+
+    public boolean OpenRecordDetailed(String fsValue, boolean isByBranch) throws SQLException {
+
+        if (p_oApp == null) {
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        p_sMessage = "";
+        String lsSQL = getSQ_RecordDetail(fsValue);
+        String lsCondition = "";
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        //period
+        if (!fsValue.isEmpty()) {
+            lsCondition = MiscUtil.addCondition(lsCondition, " sMonthxxx = " + SQLUtil.toSQL(fsValue));
+        }
+        //brnach
+        if (p_oBranch != null) {
+            lsCondition = MiscUtil.addCondition(lsCondition, " sBranchCD = " + SQLUtil.toSQL(getBranch("sBranchCd")));
+        }
+        //division
+        if (p_oDivision != null) {
+            lsCondition = MiscUtil.addCondition(lsCondition, " sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
+        }
+        //incentive
+        if (p_oCategory != null) {
+            lsCondition = MiscUtil.addCondition(lsCondition, " sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
+        }
+        //area
+        if (p_oBranchArea != null) {
+            lsCondition = MiscUtil.addCondition(lsCondition, "  sAreaCode = " + SQLUtil.toSQL(getBranchArea("sAreaCode")));
+        }
+        //ctranstat
+        if (p_nTranStat >= 0) {
+            lsCondition = MiscUtil.addCondition(lsCondition, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat == 1) {
+                if (!p_bAuditApproval) {
+                    lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(0));
+                } else {
+                    lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(1));
+                }
+
+            }
+        }
+//        lsCondition = lsCondition + getConfigFilter();
+        if (!isByBranch) {
+            lsSQL = lsSQL + lsCondition + " ORDER BY sCompnyNm, sTransNox, sInctveCD ";
+        } else {
+            lsSQL = lsSQL + lsCondition + " ORDER BY sBranchCD, sInctveCD ";
+        }
+
+        System.out.println(lsSQL);
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oRecord = factory.createCachedRowSet();
+        p_oRecord.populate(loRS);
+        MiscUtil.close(loRS);
+
+        loRS = p_oApp.executeQuery(getSQ_RecordDetail("0=1")+ " WHERE 0=1");
         p_oRecordProcessed = factory.createCachedRowSet();
         p_oRecordProcessed.populate(loRS);
         MiscUtil.close(loRS);
@@ -1023,17 +1204,17 @@ public class IncentiveReportNew {
 
     private void processDetailedRecord(CachedRowSet source, CachedRowSet destination) throws SQLException {
 
-        double xInctvAmt = (source.getDouble("nInctvAmt") * source.getDouble("nAllcPerc") / 100) + source.getDouble("nAllcAmtx");
-        double xDedctAmt = (source.getDouble("nDedctAmt") * source.getDouble("xDedAlcPer") / 100) + source.getDouble("xDedAlcAmt");
-
-        double xNetAmount = xInctvAmt - xDedctAmt;
+//        double xInctvAmt = (source.getDouble("nInctvAmt") * source.getDouble("nAllcPerc") / 100) + source.getDouble("nAllcAmtx");
+//        double xDedctAmt = (source.getDouble("nDedctAmt") * source.getDouble("xDedAlcPer") / 100) + source.getDouble("xDedAlcAmt");
+//
+//        double xNetAmount = xInctvAmt - xDedctAmt;
 //            System.out.println(source.getString("sTransNox") + source.getString("sCompnyNm") +"Total to Reprot ="+ xNetAmount);
         destination.last();
         destination.moveToInsertRow();
         copyCurrentRow(source, destination);
-        destination.updateDouble("nInctvAmt", xInctvAmt);
-        destination.updateDouble("nDedctAmt", xDedctAmt);
-        destination.updateDouble("nTotalAmt", xNetAmount);
+//        destination.updateDouble("nInctvAmt", xInctvAmt);
+//        destination.updateDouble("nDedctAmt", xDedctAmt);
+//        destination.updateDouble("nTotalAmt", xNetAmount);
         destination.insertRow();
         destination.moveToCurrentRow();
     }
