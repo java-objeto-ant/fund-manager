@@ -191,8 +191,8 @@ public class IncentiveReleaseNew {
 //        lsSQL = "SELECT * FROM (" + lsSQL + " ) IncentiveMaster "
 //                + " LEFT JOIN Branch_Others d ON IncentiveMaster.xBranchCde = d.sBranchCD "
 //                + " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde ";
-        lsSQL = "SELECT *"
-                + "FROM (SELECT"
+        lsSQL = "SELECT * "
+                + " FROM (SELECT"
                 + " a.sTransNox,"
                 + " a.dTransact,"
                 + " a.sDeptIDxx,"
