@@ -176,54 +176,52 @@ public class IncentiveReleaseNew {
         String lsSQL = getSQ_Detail();
 
 //        if (System.getProperty(REQUIRE_CSS).equals("1")) {
-//            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
+////            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
+////        }
+//
+//        if (System.getProperty(REQUIRE_CM).equals("1")) {
+//            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd2 = '1'");
 //        }
-
-        if (System.getProperty(REQUIRE_CM).equals("1")) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd2 = '1'");
-        }
-
-        //retreive only untagged entries
-        lsSQL = MiscUtil.addCondition(lsSQL, "sBatchNox = ''");
-
-        //add period 
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.sMonthxxx = " + SQLUtil.toSQL(fsPeriod));
-
+//
+//        //retreive only untagged entries
+//        lsSQL = MiscUtil.addCondition(lsSQL, "sBatchNox = ''");
+//
+//        //add period 
+//        lsSQL = MiscUtil.addCondition(lsSQL, " a.sMonthxxx = " + SQLUtil.toSQL(fsPeriod));
 //        lsSQL = "SELECT * FROM (" + lsSQL + " ) IncentiveMaster "
 //                + " LEFT JOIN Branch_Others d ON IncentiveMaster.xBranchCde = d.sBranchCD "
 //                + " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde ";
-        
-        
-        lsSQL = "SELECT *" +
-                "FROM (SELECT" +
-                    " a.sTransNox," +
-                    " a.dTransact," +
-                    " a.sDeptIDxx," +
-                    " a.sMonthxxx," +
-                    " a.sRemarksx," +
-                    " a.sPrepared," +
-                    " a.dPrepared," +
-                    " a.cApprovd1," +
-                    " a.sApprovd1," +
-                    " a.dApprovd1," +
-                    " a.cApprovd2," +
-                    " a.sApprovd2," +
-                    " a.dApprovd2," +
-                    " a.sBatchNox," +
-                    " a.cTranStat," +
-                    " COALESCE(c.sBranchNm, f.sBranchNm) AS xBranchNm," +
-                    " IFNULL (b.sDeptName, '')    xDeptName," +
-                    " COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde" +
-                    " FROM Incentive_Master a" +
-                        " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
-                        " LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd" +
-                        " LEFT JOIN Branch_Others d ON a.sBranchCd = d.sBranchCD" +
-                        " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde" +
-                        " LEFT JOIN Branch f ON LEFT(a.sTransNox,4) = f.sBranchCd" +
-                    " WHERE a.cTranStat = '1'" +
-                    " AND a.cApprovd2 = '1'" +
-                    " AND a.sBatchNox = ''" +
-                   " AND a.sMonthxxx = '202407'";
+        lsSQL = "SELECT *"
+                + "FROM (SELECT"
+                + " a.sTransNox,"
+                + " a.dTransact,"
+                + " a.sDeptIDxx,"
+                + " a.sMonthxxx,"
+                + " a.sRemarksx,"
+                + " a.sPrepared,"
+                + " a.dPrepared,"
+                + " a.cApprovd1,"
+                + " a.sApprovd1,"
+                + " a.dApprovd1,"
+                + " a.cApprovd2,"
+                + " a.sApprovd2,"
+                + " a.dApprovd2,"
+                + " a.sBatchNox,"
+                + " a.cTranStat,"
+                + " COALESCE(c.sBranchNm, f.sBranchNm) AS xBranchNm,"
+                + " IFNULL (b.sDeptName, '')    xDeptName,"
+                + " COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde"
+                + " FROM Incentive_Master a"
+                + " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
+                + " LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd"
+                + " LEFT JOIN Branch_Others d ON a.sBranchCd = d.sBranchCD"
+                + " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde"
+                + " LEFT JOIN Branch f ON LEFT(a.sTransNox,4) = f.sBranchCd"
+                + " WHERE a.cTranStat = '1'"
+                + " AND a.cApprovd2 = '1'"
+                + " AND a.sBatchNox = ''";
+
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.sMonthxxx = " + SQLUtil.toSQL(fsPeriod));
 
         if (p_oDivision != null) {
             lsSQL = MiscUtil.addCondition(lsSQL, " e.sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
@@ -473,7 +471,7 @@ public class IncentiveReleaseNew {
             return false;
         }
         if (p_oApp.getUserLevel() < UserRight.SUPERVISOR) {
-                p_sMessage = "Your account level is not authorized to use this transaction.";
+            p_sMessage = "Your account level is not authorized to use this transaction.";
             return false;
         }
 
