@@ -162,9 +162,8 @@ public class IncentiveReleaseNew {
             p_sMessage = "No specified Period for Retrieval.";
             return false;
         }
-
         if (!System.getProperty(DEBUG_MODE).equals("1")) {
-            if (p_oApp.getDepartment().equals(FINANCE)) {
+            if (!p_oApp.getDepartment().equals(FINANCE)) {
                 p_sMessage = "User is not allowed to use this application.";
                 return false;
             }
