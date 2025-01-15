@@ -691,7 +691,7 @@ public class IncentiveReleaseNew {
                 + " LEFT JOIN Branch e ON a.sBranchCd = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
-                + " LEFT JOIN Division k ON g.cDivision = k.sDivsnCde"
+                + " Left JOIN Branch_Others k ON LEFT(a.sTransNox,4) = k.sBranchCd"
                 + ", Incentive_Detail_Allocation b"
                 + " LEFT JOIN Incentive d ON b.sInctveCD = d.sInctveCD"
                 + ", Incentive_Detail_Allocation_Employee c"
@@ -710,7 +710,7 @@ public class IncentiveReleaseNew {
         }
 
         if (p_oDivision != null) {
-            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " k.sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
+            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " k.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
         }
         String lsSQLDeduction = " SELECT "
                 + " IFNULL (h.sAreaDesc, '') sAreaDesc"
@@ -721,7 +721,11 @@ public class IncentiveReleaseNew {
                 + ", IFNULL (f.sCompnyNm, '') xEmployNm "
                 + ", IFNULL (j.sPositnNm, '') xPositnNm "
                 + ", '0.0' xIncentve"
-                + ", `gua_decrypt`(cc.nDedctAmt, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") xDeductnx"
+                + ", CASE WHEN gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ")"
+                + " THEN gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (c.nAllcPerc / 100) "
+                + " + gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") " 
+                + " ELSE gua_decrypt(cc.nDedctAmt," + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (c.nAllcPerc / 100)"
+                + " END xDeductnx"
                 + ", i.cRecdStat "
                 + ", COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde"
                 + " FROM Incentive_Master a"
