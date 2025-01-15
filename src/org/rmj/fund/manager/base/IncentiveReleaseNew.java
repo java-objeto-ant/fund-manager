@@ -5,6 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.RowSetMetaData;
@@ -40,7 +42,6 @@ public class IncentiveReleaseNew {
 
     private final Incentive p_oIncentive;
     private final IncentiveBankInfo p_oBankInfo;
-    private ArrayList<Incentive> p_oDetail;
 
     private CachedRowSet p_oDivision;
 
@@ -52,6 +53,7 @@ public class IncentiveReleaseNew {
     private boolean p_bWithUI = true;
 
     private CachedRowSet p_oMaster;
+    private CachedRowSet p_oDetail;
     private LMasDetTrans p_oListener;
 
     public IncentiveReleaseNew(GRider foApp, String fsBranchCd, boolean fbWithParent) {
@@ -127,12 +129,22 @@ public class IncentiveReleaseNew {
         }
     }
 
-    public Incentive getDetail(int fnRow) {
-//        if (getItemCount() == 0 || getItemCount() < fnRow) {
-//            return null;
-//        }
+    public Object getDetail(int fnRow, int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+        if (getItemCount() == 0 || fnRow > getItemCount()) {
+            return null;
+        }
 
-        return p_oDetail.get(fnRow);
+        p_oDetail.absolute(fnRow);
+
+        return p_oDetail.getObject(fnIndex);
+
+    }
+
+    public Object getDetail(int fnRow, String fsIndex) throws SQLException {
+        return getDetail(fnRow, getColumnIndex(p_oDetail, fsIndex));
     }
 
     public Object getMaster(int fnIndex) throws SQLException {
@@ -149,6 +161,8 @@ public class IncentiveReleaseNew {
     }
 
     public boolean NewTransaction(String fsPeriod) throws SQLException {
+        String lsSQL;
+        RowSetFactory factory = RowSetProvider.newFactory();
         if (p_oApp == null) {
             p_sMessage = "Application driver is not set.";
             return false;
@@ -172,84 +186,65 @@ public class IncentiveReleaseNew {
         p_sMessage = "";
 
         initMaster();
-
-        String lsSQL = getSQ_Detail();
-
 //        if (System.getProperty(REQUIRE_CSS).equals("1")) {
-//            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
+////            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd1 = '1'");
+////        }
+//
+//        if (System.getProperty(REQUIRE_CM).equals("1")) {
+//            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd2 = '1'");
 //        }
-
-        if (System.getProperty(REQUIRE_CM).equals("1")) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.cApprovd2 = '1'");
-        }
-
-        //retreive only untagged entries
-        lsSQL = MiscUtil.addCondition(lsSQL, "sBatchNox = ''");
-
-        //add period 
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.sMonthxxx = " + SQLUtil.toSQL(fsPeriod));
-
+//
+//        //retreive only untagged entries
+//        lsSQL = MiscUtil.addCondition(lsSQL, "sBatchNox = ''");
+//
+//        //add period 
+//        lsSQL = MiscUtil.addCondition(lsSQL, " a.sMonthxxx = " + SQLUtil.toSQL(fsPeriod));
 //        lsSQL = "SELECT * FROM (" + lsSQL + " ) IncentiveMaster "
 //                + " LEFT JOIN Branch_Others d ON IncentiveMaster.xBranchCde = d.sBranchCD "
 //                + " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde ";
-        
-        
-        lsSQL = "SELECT *" +
-                "FROM (SELECT" +
-                    " a.sTransNox," +
-                    " a.dTransact," +
-                    " a.sDeptIDxx," +
-                    " a.sMonthxxx," +
-                    " a.sRemarksx," +
-                    " a.sPrepared," +
-                    " a.dPrepared," +
-                    " a.cApprovd1," +
-                    " a.sApprovd1," +
-                    " a.dApprovd1," +
-                    " a.cApprovd2," +
-                    " a.sApprovd2," +
-                    " a.dApprovd2," +
-                    " a.sBatchNox," +
-                    " a.cTranStat," +
-                    " COALESCE(c.sBranchNm, f.sBranchNm) AS xBranchNm," +
-                    " IFNULL (b.sDeptName, '')    xDeptName," +
-                    " COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde" +
-                    " FROM Incentive_Master a" +
-                        " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx" +
-                        " LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd" +
-                        " LEFT JOIN Branch_Others d ON a.sBranchCd = d.sBranchCD" +
-                        " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde" +
-                        " LEFT JOIN Branch f ON LEFT(a.sTransNox,4) = f.sBranchCd" +
-                    " WHERE a.cTranStat = '1'" +
-                    " AND a.cApprovd2 = '1'" +
-                    " AND a.sBatchNox = ''" +
-                   " AND a.sMonthxxx = '202407'";
+//        lsSQL = " SELECT "
+//                + " a.sTransNox,"
+//                + " a.dTransact,"
+//                + " a.sDeptIDxx,"
+//                + " a.sMonthxxx,"
+//                + " a.sRemarksx,"
+//                + " a.sPrepared,"
+//                + " a.dPrepared,"
+//                + " a.cApprovd1,"
+//                + " a.sApprovd1,"
+//                + " a.dApprovd1,"
+//                + " a.cApprovd2,"
+//                + " a.sApprovd2,"
+//                + " a.dApprovd2,"
+//                + " a.sBatchNox,"
+//                + " a.cTranStat,"
+//                + " COALESCE(c.sBranchNm, f.sBranchNm) AS xBranchNm,"
+//                + " IFNULL (b.sDeptName, '')    xDeptName,"
+//                + " COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde"
+//                + " FROM Incentive_Master a"
+//                + " LEFT JOIN Department b ON a.sDeptIDxx = b.sDeptIDxx"
+//                + " LEFT JOIN Branch c ON c.sBranchCd = a.sBranchCd"
+//                + " LEFT JOIN Branch_Others d ON a.sBranchCd = d.sBranchCD"
+//                + " LEFT JOIN Division e ON d.cDivision = e.sDivsnCde"
+//                + " LEFT JOIN Branch f ON LEFT(a.sTransNox,4) = f.sBranchCd"
+//                + " WHERE a.cTranStat = '1'"
+//                + " AND a.cApprovd2 = '1'"
+//                + " AND a.sBatchNox = '' ORDER BY xBranchCde";
 
-        if (p_oDivision != null) {
-            lsSQL = MiscUtil.addCondition(lsSQL, " e.sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
-            lsSQL = lsSQL + ")`IncentiveMaster` ORDER BY xBranchCde";
-        }
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-
+        ResultSet loRS;
+        //OpenDetail
+        lsSQL = getSQ_Detail(fsPeriod, "");
         System.err.println("Retrieve Query = " + lsSQL);
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oDetail = factory.createCachedRowSet();
+        p_oDetail.populate(loRS);
+        MiscUtil.close(loRS);
+        p_nEditMode = EditMode.ADDNEW;
 
-        if (MiscUtil.RecordCount(loRS) == 0) {
+        if (getItemCount() == 0) {
             p_sMessage = "No incentive record to release.";
-            MiscUtil.close(loRS);
             return false;
         }
-
-        p_oDetail = new ArrayList();
-        while (loRS.next()) {
-            Incentive newTransaction = new Incentive(p_oApp, p_sBranchCd, p_bWithParent);
-            newTransaction.setTranStat(1);
-            if (newTransaction.SearchTransaction(loRS.getString("sTransNox"), true)) {
-                p_oDetail.add(newTransaction);
-            }
-        }
-        MiscUtil.close(loRS);
-
-        p_nEditMode = EditMode.ADDNEW;
         return true;
     }
 
@@ -280,24 +275,32 @@ public class IncentiveReleaseNew {
         String lsSQL;
         int lnCtr = 0;
         double lnTranTotl = 0.00;
+        String lsDetailTransNox = "";
 
-        for (lnCtr = 0; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
-            lsSQL = "UPDATE Incentive_Master SET"
-                    + "  sBatchNox = " + SQLUtil.toSQL(lsTransNox)
-                    + " WHERE sTransNox = " + SQLUtil.toSQL((String) p_oDetail.get(lnCtr).getMaster("sTransNox"));
-            //get the total incentive's 
-            for (int lnCtrDetail = 1; lnCtrDetail <= getDetail(lnCtr).getItemCount(); lnCtrDetail++) {
-                lnTranTotl += (double) p_oDetail.get(lnCtr).getDetail(lnCtrDetail, "nTotalAmt");
-            }
+        Set<String> processedTransNox = new HashSet<>();
+        for (lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+            p_oDetail.absolute(lnCtr);
+            lnTranTotl += (double) p_oDetail.getDouble("xIncentve") - (double) p_oDetail.getDouble("xDeductnx");
+            lsDetailTransNox = p_oDetail.getString("sTransNox");
 
-            if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, ((String) p_oDetail.get(lnCtr).getMaster("sTransNox")).substring(0, 4)) <= 0) {
-                if (!p_bWithParent) {
-                    p_oApp.rollbackTrans();
+            // Check if this transaction number has already been processed
+            if (!processedTransNox.contains(lsDetailTransNox)) {
+                lsSQL = "UPDATE Incentive_Master SET"
+                        + "  sBatchNox = " + SQLUtil.toSQL(lsTransNox)
+                        + " WHERE sTransNox = " + SQLUtil.toSQL(lsDetailTransNox);
+
+                // Execute the query
+                if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, (lsDetailTransNox).substring(0, 4)) <= 0) {
+                    if (!p_bWithParent) {
+                        p_oApp.rollbackTrans();
+                    }
+                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    return false;
                 }
-                p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-                return false;
-            }
 
+                // Add this transaction number to the processed set
+                processedTransNox.add(lsDetailTransNox);
+            }
         }
 
         p_oMaster.first();
@@ -431,18 +434,12 @@ public class IncentiveReleaseNew {
             return false;
         }
 
-        lsSQL = MiscUtil.addCondition(getSQ_Detail(), "a.sBatchNox = " + SQLUtil.toSQL(fsTransNox));
+        lsSQL = getSQ_Detail("", fsTransNox);
         System.out.print(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
-
-        p_oDetail = new ArrayList();
-        while (loRS.next()) {
-            Incentive newTransaction = new Incentive(p_oApp, p_sBranchCd, p_bWithParent);
-            newTransaction.setTranStat(1);
-            if (newTransaction.SearchTransaction(loRS.getString("sTransNox"), true)) {
-                p_oDetail.add(newTransaction);
-            }
-        }
+        p_oDetail = factory.createCachedRowSet();
+        p_oDetail.populate(loRS);
+        MiscUtil.close(loRS);
 
         MiscUtil.close(loRS);
         p_nEditMode = EditMode.READY;
@@ -473,7 +470,7 @@ public class IncentiveReleaseNew {
             return false;
         }
         if (p_oApp.getUserLevel() < UserRight.SUPERVISOR) {
-                p_sMessage = "Your account level is not authorized to use this transaction.";
+            p_sMessage = "Your account level is not authorized to use this transaction.";
             return false;
         }
 
@@ -676,8 +673,87 @@ public class IncentiveReleaseNew {
                 + " FROM Incentive_Releasing_Master";
     }
 
-    private String getSQ_Detail() {
-        return p_oIncentive.getSQ_Master();
+    private String getSQ_Detail(String fsMonth, String fsBatchNox) throws SQLException {
+        String lsSQLIncentives = "SELECT "
+                + " IFNULL (h.sAreaDesc, '') sAreaDesc"
+                + ", IFNULL (e.sBranchNm, '') xBranchNm"
+                + ", a.sTransNox "
+                + ", a.sMonthxxx "
+                + ", c.sEmployID "
+                + ", IFNULL (f.sCompnyNm, '') xEmployNm "
+                + ", IFNULL (j.sPositnNm, '') xPositnNm "
+                + ", `gua_decrypt`(b.nInctvAmt, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ")"
+                + " * (c.nAllcPerc / 100) + `gua_decrypt`(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") xIncentve"
+                + ", '0.0' xDeductnx"
+                + ", i.cRecdStat "
+                + ", COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde"
+                + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
+                + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
+                + " FROM Incentive_Master a"
+                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
+                + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
+                + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
+                + ", Incentive_Detail_Allocation b"
+                + " LEFT JOIN Incentive d ON b.sInctveCD = d.sInctveCD"
+                + ", Incentive_Detail_Allocation_Employee c"
+                + " LEFT JOIN Client_Master f ON c.sEmployID = f.sClientID"
+                + " LEFT JOIN Employee_Master001 i ON c.sEmployID = i.sEmployID"
+                + " LEFT JOIN `Position` j ON i.sPositnID = j.sPositnID"
+                + " WHERE a.sTransNox = b.sTransNox"
+                + " AND b.sTransNox = c.sTransNox"
+                + " AND b.sInctveCd = c.sInctveCd"
+                + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox);
+
+        if (!fsMonth.isEmpty()) {
+            lsSQLIncentives += " AND a.cTranStat = '1'"
+                    + " AND a.cApprovd2 = '1' ";
+            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
+        }
+
+        if (p_oDivision != null) {
+            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " g.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
+        }
+        String lsSQLDeduction = " SELECT "
+                + " IFNULL (h.sAreaDesc, '') sAreaDesc"
+                + ", IFNULL (e.sBranchNm, '') xBranchNm"
+                + ", a.sTransNox "
+                + ", a.sMonthxxx"
+                + ", c.sEmployID "
+                + ", IFNULL (f.sCompnyNm, '') xEmployNm "
+                + ", IFNULL (j.sPositnNm, '') xPositnNm "
+                + ", '0.0' xIncentve"
+                + ", CASE WHEN gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ")"
+                + " THEN gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (c.nAllcPerc / 100) "
+                + " + gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") " 
+                + " ELSE gua_decrypt(cc.nDedctAmt," + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (c.nAllcPerc / 100)"
+                + " END xDeductnx"
+                + ", i.cRecdStat "
+                + ", COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde"
+                + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
+                + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
+                + " FROM Incentive_Master a"
+                + " LEFT JOIN Branch e ON a.sBranchCd = e.sBranchCd"
+                + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
+                + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
+                + " LEFT JOIN Division k ON g.cDivision = k.sDivsnCde"
+                + ", Incentive_Detail_Ded_Allocation_Employee c"
+                + " LEFT JOIN Incentive_Detail_Ded_Allocation cc ON c.sTransNox = cc.sTransNox AND c.nEntryNox = cc.nEntryNox"
+                + " LEFT JOIN Client_Master f ON c.sEmployID = f.sClientID"
+                + " LEFT JOIN Employee_Master001 i ON c.sEmployID = i.sEmployID"
+                + " LEFT JOIN `Position` j ON i.sPositnID = j.sPositnID"
+                + " WHERE  a.sTransNox = c.sTransNox"
+                + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox)
+                + " GROUP BY a.sTransNox, c.sEmployID, cc.nEntryNox";
+        if (!fsMonth.isEmpty()) {
+            lsSQLDeduction += " AND a.cTranStat = '1'"
+                    + " AND a.cApprovd2 = '1' ";
+            lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
+        }
+
+        if (p_oDivision != null) {
+            lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " k.sDivsnCde = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
+        }
+        return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
     }
 
     private int getColumnIndex(String fsValue) throws SQLException {
@@ -892,19 +968,30 @@ public class IncentiveReleaseNew {
                 return false;
             }
 
-            for (int lnCtr = 0; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
-                lsSQL = "UPDATE Incentive_Master SET"
-                        + "  cTranStat = " + SQLUtil.toSQL("7")
-                        + " WHERE sTransNox = " + SQLUtil.toSQL((String) p_oDetail.get(lnCtr).getMaster("sTransNox"));
+            Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
+            String lsDetailTransNox;
+            for (int lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+                p_oDetail.absolute(lnCtr);
+                lsDetailTransNox = p_oDetail.getString("sTransNox");
 
-                if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, ((String) p_oDetail.get(lnCtr).getMaster("sTransNox")).substring(0, 4)) <= 0) {
-                    if (!p_bWithParent) {
-                        p_oApp.rollbackTrans();
+                // Check if this transaction number has already been processed
+                if (!processedTransNox.contains(lsDetailTransNox)) {
+                    lsSQL = "UPDATE Incentive_Master SET"
+                            + "  cTranStat = " + SQLUtil.toSQL("7")
+                            + " WHERE sTransNox = " + SQLUtil.toSQL(lsDetailTransNox);
+
+                    // Execute the query
+                    if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, (lsDetailTransNox).substring(0, 4)) <= 0) {
+                        if (!p_bWithParent) {
+                            p_oApp.rollbackTrans();
+                        }
+                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                        return false;
                     }
-                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-                    return false;
-                }
 
+                    // Add this transaction number to the processed set
+                    processedTransNox.add(lsDetailTransNox);
+                }
             }
             if (p_oListener != null) {
                 p_oListener.MasterRetreive(8, "2");
