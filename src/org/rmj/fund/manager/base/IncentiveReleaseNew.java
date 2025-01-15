@@ -280,7 +280,7 @@ public class IncentiveReleaseNew {
         Set<String> processedTransNox = new HashSet<>();
         for (lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
             p_oDetail.absolute(lnCtr);
-            lnTranTotl += (double) p_oDetail.getDouble("nTotalAmt");
+            lnTranTotl += (double) p_oDetail.getDouble("xIncentve") - (double) p_oDetail.getDouble("xDeductnx");
             lsDetailTransNox = p_oDetail.getString("sTransNox");
 
             // Check if this transaction number has already been processed
@@ -688,10 +688,9 @@ public class IncentiveReleaseNew {
                 + ", i.cRecdStat "
                 + ", COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS xBranchCde"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON a.sBranchCd = e.sBranchCd"
+                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
-                + " Left JOIN Branch_Others k ON LEFT(a.sTransNox,4) = k.sBranchCd"
                 + ", Incentive_Detail_Allocation b"
                 + " LEFT JOIN Incentive d ON b.sInctveCD = d.sInctveCD"
                 + ", Incentive_Detail_Allocation_Employee c"
@@ -710,7 +709,7 @@ public class IncentiveReleaseNew {
         }
 
         if (p_oDivision != null) {
-            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " k.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
+            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " g.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
         }
         String lsSQLDeduction = " SELECT "
                 + " IFNULL (h.sAreaDesc, '') sAreaDesc"
