@@ -278,7 +278,7 @@ public class IncentiveReleaseNew {
         String lsDetailTransNox = "";
 
         Set<String> processedTransNox = new HashSet<>();
-        for (lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+        for (lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
             p_oDetail.absolute(lnCtr);
             lnTranTotl += (double) p_oDetail.getDouble("xIncentve") - (double) p_oDetail.getDouble("xDeductnx");
             lsDetailTransNox = p_oDetail.getString("sTransNox");
@@ -970,7 +970,7 @@ public class IncentiveReleaseNew {
 
             Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
             String lsDetailTransNox;
-            for (int lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+            for (int lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
                 p_oDetail.absolute(lnCtr);
                 lsDetailTransNox = p_oDetail.getString("sTransNox");
 
