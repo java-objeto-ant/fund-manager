@@ -278,7 +278,7 @@ public class IncentiveReleaseNew {
         String lsDetailTransNox = "";
 
         Set<String> processedTransNox = new HashSet<>();
-        for (lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+        for (lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
             p_oDetail.absolute(lnCtr);
             lnTranTotl += (double) p_oDetail.getDouble("xIncentve") - (double) p_oDetail.getDouble("xDeductnx");
             lsDetailTransNox = p_oDetail.getString("sTransNox");
@@ -702,11 +702,11 @@ public class IncentiveReleaseNew {
                 + " WHERE a.sTransNox = b.sTransNox"
                 + " AND b.sTransNox = c.sTransNox"
                 + " AND b.sInctveCd = c.sInctveCd"
+                + " AND a.cApprovd2 = '1' "
                 + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox);
 
         if (!fsMonth.isEmpty()) {
-            lsSQLIncentives += " AND a.cTranStat = '1'"
-                    + " AND a.cApprovd2 = '1' ";
+            lsSQLIncentives += " AND a.cTranStat = '1'";
             lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
         }
 
@@ -724,7 +724,7 @@ public class IncentiveReleaseNew {
                 + ", '0.0' xIncentve"
                 + ", CASE WHEN gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ")"
                 + " THEN gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (c.nAllcPerc / 100) "
-                + " + gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") " 
+                + " + gua_decrypt(c.nAllcAmtx, " + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") "
                 + " ELSE gua_decrypt(cc.nDedctAmt," + SQLUtil.toSQL(p_oApp.SIGNATURE) + ") * (c.nAllcPerc / 100)"
                 + " END xDeductnx"
                 + ", i.cRecdStat "
@@ -742,11 +742,11 @@ public class IncentiveReleaseNew {
                 + " LEFT JOIN Employee_Master001 i ON c.sEmployID = i.sEmployID"
                 + " LEFT JOIN `Position` j ON i.sPositnID = j.sPositnID"
                 + " WHERE  a.sTransNox = c.sTransNox"
+                + " AND a.cApprovd2 = '1' "
                 + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox)
                 + " GROUP BY a.sTransNox, c.sEmployID, cc.nEntryNox";
         if (!fsMonth.isEmpty()) {
-            lsSQLDeduction += " AND a.cTranStat = '1'"
-                    + " AND a.cApprovd2 = '1' ";
+            lsSQLDeduction += " AND a.cTranStat = '1'";
             lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
         }
 
@@ -970,7 +970,7 @@ public class IncentiveReleaseNew {
 
             Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
             String lsDetailTransNox;
-            for (int lnCtr = 1; lnCtr <= p_oDetail.size() - 1; lnCtr++) {
+            for (int lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
                 p_oDetail.absolute(lnCtr);
                 lsDetailTransNox = p_oDetail.getString("sTransNox");
 
