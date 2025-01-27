@@ -378,7 +378,7 @@ public class IncentiveReleaseNew {
             lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));
         } else {
             lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-            lsSQL += " LIMIT 1";
+           
         }
 
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
@@ -732,7 +732,7 @@ public class IncentiveReleaseNew {
                 + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
                 + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON a.sBranchCd = e.sBranchCd"
+                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + " LEFT JOIN Division k ON g.cDivision = k.sDivsnCde"
