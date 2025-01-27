@@ -378,7 +378,7 @@ public class IncentiveReleaseNew {
             lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));
         } else {
             lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-           
+
         }
 
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
@@ -690,7 +690,7 @@ public class IncentiveReleaseNew {
                 + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
                 + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
+                + " LEFT JOIN Branch e ON COALESCE (a.sBranchCd, LEFT (a.sTransNox, 4))  = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + ", Incentive_Detail_Allocation b"
@@ -703,10 +703,10 @@ public class IncentiveReleaseNew {
                 + " AND b.sTransNox = c.sTransNox"
                 + " AND b.sInctveCd = c.sInctveCd"
                 + " AND a.cApprovd2 = '1' "
+                + " AND a.cTranStat = '1'"
                 + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox);
 
         if (!fsMonth.isEmpty()) {
-            lsSQLIncentives += " AND a.cTranStat = '1'";
             lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
         }
 
@@ -732,7 +732,7 @@ public class IncentiveReleaseNew {
                 + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
                 + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
+                + " LEFT JOIN Branch e ON COALESCE (a.sBranchCd, LEFT (a.sTransNox, 4))  = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + " LEFT JOIN Division k ON g.cDivision = k.sDivsnCde"
@@ -744,9 +744,9 @@ public class IncentiveReleaseNew {
                 + " WHERE  a.sTransNox = c.sTransNox"
                 + " AND a.cApprovd2 = '1' "
                 + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox)
+                + " AND a.cTranStat = '1'"
                 + " GROUP BY a.sTransNox, c.sEmployID, cc.nEntryNox";
         if (!fsMonth.isEmpty()) {
-            lsSQLDeduction += " AND a.cTranStat = '1'";
             lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
         }
 
