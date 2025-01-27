@@ -378,7 +378,7 @@ public class IncentiveReleaseNew {
             lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));
         } else {
             lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-            lsSQL += " LIMIT 1";
+
         }
 
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
@@ -690,7 +690,7 @@ public class IncentiveReleaseNew {
                 + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
                 + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
+                + " LEFT JOIN Branch e ON COALESCE (a.sBranchCd, LEFT (a.sTransNox, 4))  = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + ", Incentive_Detail_Allocation b"
@@ -703,10 +703,10 @@ public class IncentiveReleaseNew {
                 + " AND b.sTransNox = c.sTransNox"
                 + " AND b.sInctveCd = c.sInctveCd"
                 + " AND a.cApprovd2 = '1' "
+                + " AND a.cTranStat = '1'"
                 + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox);
 
         if (!fsMonth.isEmpty()) {
-            lsSQLIncentives += " AND a.cTranStat = '1'";
             lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
         }
 
@@ -732,7 +732,7 @@ public class IncentiveReleaseNew {
                 + ", IFNULL (i.sBnkActNo, '') sBnkActNo"
                 + ", IFNULL (i.sBankIDxx, '') sBankIDxx"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON a.sBranchCd = e.sBranchCd"
+                + " LEFT JOIN Branch e ON COALESCE (a.sBranchCd, LEFT (a.sTransNox, 4))  = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + " LEFT JOIN Division k ON g.cDivision = k.sDivsnCde"
@@ -744,9 +744,9 @@ public class IncentiveReleaseNew {
                 + " WHERE  a.sTransNox = c.sTransNox"
                 + " AND a.cApprovd2 = '1' "
                 + " AND a.sBatchNox = " + SQLUtil.toSQL(fsBatchNox)
+                + " AND a.cTranStat = '1'"
                 + " GROUP BY a.sTransNox, c.sEmployID, cc.nEntryNox";
         if (!fsMonth.isEmpty()) {
-            lsSQLDeduction += " AND a.cTranStat = '1'";
             lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
         }
 
@@ -968,31 +968,31 @@ public class IncentiveReleaseNew {
                 return false;
             }
 
-            Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
-            String lsDetailTransNox;
-            for (int lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
-                p_oDetail.absolute(lnCtr);
-                lsDetailTransNox = p_oDetail.getString("sTransNox");
-
-                // Check if this transaction number has already been processed
-                if (!processedTransNox.contains(lsDetailTransNox)) {
-                    lsSQL = "UPDATE Incentive_Master SET"
-                            + "  cTranStat = " + SQLUtil.toSQL("7")
-                            + " WHERE sTransNox = " + SQLUtil.toSQL(lsDetailTransNox);
-
-                    // Execute the query
-                    if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, (lsDetailTransNox).substring(0, 4)) <= 0) {
-                        if (!p_bWithParent) {
-                            p_oApp.rollbackTrans();
-                        }
-                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-                        return false;
-                    }
-
-                    // Add this transaction number to the processed set
-                    processedTransNox.add(lsDetailTransNox);
-                }
-            }
+//            Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
+//            String lsDetailTransNox;
+//            for (int lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
+//                p_oDetail.absolute(lnCtr);
+//                lsDetailTransNox = p_oDetail.getString("sTransNox");
+//
+//                // Check if this transaction number has already been processed
+//                if (!processedTransNox.contains(lsDetailTransNox)) {
+//                    lsSQL = "UPDATE Incentive_Master SET"
+//                            + "  cTranStat = " + SQLUtil.toSQL("7")
+//                            + " WHERE sTransNox = " + SQLUtil.toSQL(lsDetailTransNox);
+//
+//                    // Execute the query
+//                    if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, (lsDetailTransNox).substring(0, 4)) <= 0) {
+//                        if (!p_bWithParent) {
+//                            p_oApp.rollbackTrans();
+//                        }
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//
+//                    // Add this transaction number to the processed set
+//                    processedTransNox.add(lsDetailTransNox);
+//                }
+//            }
             if (p_oListener != null) {
                 p_oListener.MasterRetreive(8, "2");
             }
