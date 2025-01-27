@@ -968,31 +968,31 @@ public class IncentiveReleaseNew {
                 return false;
             }
 
-            Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
-            String lsDetailTransNox;
-            for (int lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
-                p_oDetail.absolute(lnCtr);
-                lsDetailTransNox = p_oDetail.getString("sTransNox");
-
-                // Check if this transaction number has already been processed
-                if (!processedTransNox.contains(lsDetailTransNox)) {
-                    lsSQL = "UPDATE Incentive_Master SET"
-                            + "  cTranStat = " + SQLUtil.toSQL("7")
-                            + " WHERE sTransNox = " + SQLUtil.toSQL(lsDetailTransNox);
-
-                    // Execute the query
-                    if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, (lsDetailTransNox).substring(0, 4)) <= 0) {
-                        if (!p_bWithParent) {
-                            p_oApp.rollbackTrans();
-                        }
-                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-                        return false;
-                    }
-
-                    // Add this transaction number to the processed set
-                    processedTransNox.add(lsDetailTransNox);
-                }
-            }
+//            Set<String> processedTransNox = new HashSet<>(); // To track processed transaction numbers
+//            String lsDetailTransNox;
+//            for (int lnCtr = 1; lnCtr <= p_oDetail.size(); lnCtr++) {
+//                p_oDetail.absolute(lnCtr);
+//                lsDetailTransNox = p_oDetail.getString("sTransNox");
+//
+//                // Check if this transaction number has already been processed
+//                if (!processedTransNox.contains(lsDetailTransNox)) {
+//                    lsSQL = "UPDATE Incentive_Master SET"
+//                            + "  cTranStat = " + SQLUtil.toSQL("7")
+//                            + " WHERE sTransNox = " + SQLUtil.toSQL(lsDetailTransNox);
+//
+//                    // Execute the query
+//                    if (p_oApp.executeQuery(lsSQL, "Incentive_Master", p_sBranchCd, (lsDetailTransNox).substring(0, 4)) <= 0) {
+//                        if (!p_bWithParent) {
+//                            p_oApp.rollbackTrans();
+//                        }
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//
+//                    // Add this transaction number to the processed set
+//                    processedTransNox.add(lsDetailTransNox);
+//                }
+//            }
             if (p_oListener != null) {
                 p_oListener.MasterRetreive(8, "2");
             }
