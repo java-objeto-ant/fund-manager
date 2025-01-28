@@ -444,7 +444,7 @@ public class IncentiveReportNew {
                 + ", a.cApprovd2 cApprovd2 "
                 + ", COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS sBranchCd"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON LEFT(a.sTransNox,4) = e.sBranchCd"
+                + " LEFT JOIN Branch e ON COALESCE (a.sBranchCd, LEFT (a.sTransNox, 4))  = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + ", Incentive_Detail_Allocation b"
@@ -515,7 +515,7 @@ public class IncentiveReportNew {
                 + ", a.cApprovd2 cApprovd2 "
                 + ", COALESCE(a.sBranchCd, LEFT(a.sTransNox, 4)) AS sBranchCd"
                 + " FROM Incentive_Master a"
-                + " LEFT JOIN Branch e ON a.sBranchCd = e.sBranchCd"
+                + " LEFT JOIN Branch e ON COALESCE (a.sBranchCd, LEFT (a.sTransNox, 4))  = e.sBranchCd"
                 + " LEFT JOIN Branch_Others g ON e.sBranchCd = g.sBranchCd"
                 + " LEFT JOIN Branch_Area h ON g.sAreaCode = h.sAreaCode"
                 + " LEFT JOIN Division k ON g.cDivision = k.sDivsnCde"
@@ -526,7 +526,7 @@ public class IncentiveReportNew {
                 + " LEFT JOIN `Position` j ON i.sPositnID = j.sPositnID"
                 + " WHERE  a.sTransNox = c.sTransNox"
                 + " GROUP BY a.sTransNox, c.sEmployID, cc.nEntryNox";
-
+                
         //period
         if (!fsMonth.isEmpty()) {
             lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
