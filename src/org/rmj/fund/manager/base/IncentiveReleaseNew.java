@@ -1014,7 +1014,7 @@ public class IncentiveReleaseNew {
         //open master
         lsSQL = MiscUtil.addCondition(getSQ_Employee(), "a.sEmployID = " + SQLUtil.toSQL(fsEmployID));
         loRS = p_oApp.executeQuery(lsSQL);
-
+        System.out.println (lsSQL);
         if (!loRS.next()) {
             MiscUtil.close(loRS);
             return null;
