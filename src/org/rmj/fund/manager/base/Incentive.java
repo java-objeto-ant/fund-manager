@@ -118,7 +118,7 @@ public class Incentive {
             if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                 p_sMessage = "Your employee level is not authorized to use this transaction.";
                 return false;
-                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR).contains(p_oApp.getDepartment())) {
+            } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR).contains(p_oApp.getDepartment())) {
                 p_sMessage = "Your employee level is not authorized to use this transaction.";
                 return false;
             }
@@ -516,7 +516,7 @@ public class Incentive {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
-                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR +"»"+ FINANCE).contains(p_oApp.getDepartment())) {                   
+                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR + "»" + FINANCE).contains(p_oApp.getDepartment())) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
                 }
@@ -532,67 +532,72 @@ public class Incentive {
 
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
 //            System.out.println(p_oApp.getDepartment());
-            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
-                if (!p_oApp.getDepartment().equals(AUDITOR)) {
-                    lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
+//                if (!p_oApp.getDepartment().equals(AUDITOR)) {
+//                    lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+//                }
+//            } else 
+                if (COLLECTION.equals(p_oApp.getDepartment())) {
+                    lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
                 }
-            } else if (COLLECTION.equals(p_oApp.getDepartment())) {
-                lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+            } else {
+                if (!p_oApp.isMainOffice()) {
+                    lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+                }
             }
-        } else {
-            if (!p_oApp.isMainOffice()) {
-                lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
+            if (!lsCondition.isEmpty()) {
+                lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
             }
-        }
-        if (!lsCondition.isEmpty()) {
-            lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
-        }
 
-        if (fbByCode) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-        } else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
-        }
+            if (fbByCode) {
+                lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            } else {
+                lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            }
 
 //        System.out.println("search = " + lsSQL);
-        if (p_bWithUI) {
-            JSONObject loJSON = showFXDialog.jsonSearch(
-                    p_oApp,
-                    lsSQL,
-                    fsValue,
-                    "Trans. No.»Branch»Period»Remarks",
-                    "a.sTransNox»xBranchNm»a.sMonthxxx»a.sRemarksx",
-                    "a.sTransNox»c.sBranchNm»a.sMonthxxx»a.sRemarksx",
-                    fbByCode ? 0 : 1);
+            if (p_bWithUI) {
+                JSONObject loJSON = showFXDialog.jsonSearch(
+                        p_oApp,
+                        lsSQL,
+                        fsValue,
+                        "Trans. No.»Branch»Period»Remarks",
+                        "a.sTransNox»xBranchNm»a.sMonthxxx»a.sRemarksx",
+                        "a.sTransNox»c.sBranchNm»a.sMonthxxx»a.sRemarksx",
+                        fbByCode ? 0 : 1);
 
-            if (loJSON != null) {
-                return OpenTransaction((String) loJSON.get("sTransNox"));
+                if (loJSON != null) {
+                    return OpenTransaction((String) loJSON.get("sTransNox"));
+                } else {
+                    p_sMessage = "No record selected.";
+                    return false;
+                }
+            }
+
+            if (fbByCode) {
+                lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox = " + SQLUtil.toSQL(fsValue));
             } else {
-                p_sMessage = "No record selected.";
+                lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
+                lsSQL += " LIMIT 1";
+            }
+
+            ResultSet loRS = p_oApp.executeQuery(lsSQL);
+
+            if (!loRS.next()) {
+                MiscUtil.close(loRS);
+                p_sMessage = "No transaction found for the givern criteria.";
                 return false;
             }
-        }
 
-        if (fbByCode) {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-        } else {
-            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-            lsSQL += " LIMIT 1";
-        }
-
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-
-        if (!loRS.next()) {
+            lsSQL = loRS.getString("sTransNox");
             MiscUtil.close(loRS);
-            p_sMessage = "No transaction found for the givern criteria.";
-            return false;
+
+            return OpenTransaction(lsSQL);
         }
 
-        lsSQL = loRS.getString("sTransNox");
-        MiscUtil.close(loRS);
+    
 
-        return OpenTransaction(lsSQL);
-    }
+    
 
     public boolean OpenTransaction(String fsTransNox) throws SQLException {
         p_nEditMode = EditMode.UNKNOWN;
@@ -609,7 +614,7 @@ public class Incentive {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
-                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR+"»"+FINANCE).contains(p_oApp.getDepartment())) {
+                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR + "»" + FINANCE).contains(p_oApp.getDepartment())) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
                 }
