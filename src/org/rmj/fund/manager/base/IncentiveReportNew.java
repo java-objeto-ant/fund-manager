@@ -487,6 +487,8 @@ public class IncentiveReportNew {
                     lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.cApprovd2 =  " + SQLUtil.toSQL(1));
                 }
 
+            } else if (p_nTranStat == 7) {//release
+                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sBatchNox <>  ''");
             }
         }
         String lsSQLDeduction = " SELECT "
@@ -526,7 +528,7 @@ public class IncentiveReportNew {
                 + " LEFT JOIN `Position` j ON i.sPositnID = j.sPositnID"
                 + " WHERE  a.sTransNox = c.sTransNox"
                 + " GROUP BY a.sTransNox, c.sEmployID, cc.nEntryNox";
-                
+
         //period
         if (!fsMonth.isEmpty()) {
             lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sMonthxxx = " + SQLUtil.toSQL(fsMonth));
@@ -553,6 +555,8 @@ public class IncentiveReportNew {
                     lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.cApprovd2 =  " + SQLUtil.toSQL(1));
                 }
 
+            } else if (p_nTranStat == 7) {//release
+                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sBatchNox <>  ''");
             }
         }
         return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
@@ -600,6 +604,8 @@ public class IncentiveReportNew {
                     lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(1));
                 }
 
+            } else if (p_nTranStat == 7) {//release
+                lsCondition = MiscUtil.addCondition(lsCondition, " a.sBatchNox <>  ''");
             }
         }
 //        lsCondition = lsCondition + getConfigFilter();

@@ -118,7 +118,7 @@ public class Incentive {
             if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                 p_sMessage = "Your employee level is not authorized to use this transaction.";
                 return false;
-                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR).contains(p_oApp.getDepartment())) {
+            } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR).contains(p_oApp.getDepartment())) {
                 p_sMessage = "Your employee level is not authorized to use this transaction.";
                 return false;
             }
@@ -516,7 +516,7 @@ public class Incentive {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
-                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR +"»"+ FINANCE).contains(p_oApp.getDepartment())) {                   
+                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR + "»" + FINANCE).contains(p_oApp.getDepartment())) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
                 }
@@ -532,12 +532,14 @@ public class Incentive {
 
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
 //            System.out.println(p_oApp.getDepartment());
-            if (!(AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
-                if (!p_oApp.getDepartment().equals(AUDITOR)) {
-                    lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+            if ((AUDITOR + "»" + COLLECTION + "»" + FINANCE + "»" + MIS).contains(p_oApp.getDepartment())) {
+//                if (!p_oApp.getDepartment().equals(AUDITOR)) {
+//                    lsCondition = "a.sDeptIDxx = " + SQLUtil.toSQL(p_oApp.getDepartment());
+//                }
+//            } else 
+                if (COLLECTION.equals(p_oApp.getDepartment())) {
+                    lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
                 }
-            } else if (COLLECTION.equals(p_oApp.getDepartment())) {
-                lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
             }
         } else {
             if (!p_oApp.isMainOffice()) {
@@ -609,7 +611,7 @@ public class Incentive {
                 if (Integer.valueOf(p_oApp.getEmployeeLevel()) < 1) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
-                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR+"»"+FINANCE).contains(p_oApp.getDepartment())) {
+                } else if (!("036" + "»" + "015" + "»" + MIS + "»" + AUDITOR + "»" + FINANCE).contains(p_oApp.getDepartment())) {
                     p_sMessage = "Your employee level is not authorized to use this transaction.";
                     return false;
                 }

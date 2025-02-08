@@ -1014,7 +1014,7 @@ public class IncentiveReleaseNew {
         //open master
         lsSQL = MiscUtil.addCondition(getSQ_Employee(), "a.sEmployID = " + SQLUtil.toSQL(fsEmployID));
         loRS = p_oApp.executeQuery(lsSQL);
-
+        System.out.println (lsSQL);
         if (!loRS.next()) {
             MiscUtil.close(loRS);
             return null;
@@ -1035,9 +1035,12 @@ public class IncentiveReleaseNew {
                 + ", IFNULL(b.sMaidenNm, '') sMaidenNm "
                 + ", IFNULL(b.sEmailAdd, '') sEmailAdd "
                 + ", IFNULL(b.sMobileNo, '') sMobileNo "
+                + ", IFNULL(c.sBankName, '') sBankName "
                 + " FROM Employee_Master001 a "
                 + " LEFT JOIN Client_Master b "
-                + " ON a.sEmployID = b.sClientID ";
+                + " ON a.sEmployID = b.sClientID "
+                + " LEFT JOIN Banks c "
+                + " ON a.sBankIDxx = c.sBankIDxx ";
 
         return lsSQL;
     }
