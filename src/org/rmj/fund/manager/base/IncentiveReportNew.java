@@ -604,6 +604,8 @@ public class IncentiveReportNew {
                     lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(1));
                 }
 
+            } else if (p_nTranStat == 7) {//release
+                lsCondition = MiscUtil.addCondition(lsCondition, " a.sBatchNox <>  ''");
             }
         }
 //        lsCondition = lsCondition + getConfigFilter();
@@ -644,8 +646,8 @@ public class IncentiveReportNew {
             lsSQL = lsSQL + " WHERE sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD"));
         }
 //      
-            lsSQL = lsSQL + lsCondition + " ORDER BY sTransNox,sBranchCD,"
-                    + "sInctveCD ";
+        lsSQL = lsSQL + lsCondition + " ORDER BY sTransNox,sBranchCD,"
+                + "sInctveCD ";
 
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
