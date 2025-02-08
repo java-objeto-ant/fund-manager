@@ -540,64 +540,61 @@ public class Incentive {
                 if (COLLECTION.equals(p_oApp.getDepartment())) {
                     lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
                 }
-            } else {
-                if (!p_oApp.isMainOffice()) {
-                    lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
-                }
             }
-            if (!lsCondition.isEmpty()) {
-                lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
+        } else {
+            if (!p_oApp.isMainOffice()) {
+                lsCondition = "  LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL(p_oApp.getBranchCode());
             }
-
-            if (fbByCode) {
-                lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-            } else {
-                lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
-            }
-
-//        System.out.println("search = " + lsSQL);
-            if (p_bWithUI) {
-                JSONObject loJSON = showFXDialog.jsonSearch(
-                        p_oApp,
-                        lsSQL,
-                        fsValue,
-                        "Trans. No.»Branch»Period»Remarks",
-                        "a.sTransNox»xBranchNm»a.sMonthxxx»a.sRemarksx",
-                        "a.sTransNox»c.sBranchNm»a.sMonthxxx»a.sRemarksx",
-                        fbByCode ? 0 : 1);
-
-                if (loJSON != null) {
-                    return OpenTransaction((String) loJSON.get("sTransNox"));
-                } else {
-                    p_sMessage = "No record selected.";
-                    return false;
-                }
-            }
-
-            if (fbByCode) {
-                lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox = " + SQLUtil.toSQL(fsValue));
-            } else {
-                lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
-                lsSQL += " LIMIT 1";
-            }
-
-            ResultSet loRS = p_oApp.executeQuery(lsSQL);
-
-            if (!loRS.next()) {
-                MiscUtil.close(loRS);
-                p_sMessage = "No transaction found for the givern criteria.";
-                return false;
-            }
-
-            lsSQL = loRS.getString("sTransNox");
-            MiscUtil.close(loRS);
-
-            return OpenTransaction(lsSQL);
+        }
+        if (!lsCondition.isEmpty()) {
+            lsSQL = MiscUtil.addCondition(lsSQL, lsCondition);
         }
 
-    
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
 
-    
+//        System.out.println("search = " + lsSQL);
+        if (p_bWithUI) {
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                    p_oApp,
+                    lsSQL,
+                    fsValue,
+                    "Trans. No.»Branch»Period»Remarks",
+                    "a.sTransNox»xBranchNm»a.sMonthxxx»a.sRemarksx",
+                    "a.sTransNox»c.sBranchNm»a.sMonthxxx»a.sRemarksx",
+                    fbByCode ? 0 : 1);
+
+            if (loJSON != null) {
+                return OpenTransaction((String) loJSON.get("sTransNox"));
+            } else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "a.sTransNox LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL += " LIMIT 1";
+        }
+
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+
+        if (!loRS.next()) {
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+
+        lsSQL = loRS.getString("sTransNox");
+        MiscUtil.close(loRS);
+
+        return OpenTransaction(lsSQL);
+    }
 
     public boolean OpenTransaction(String fsTransNox) throws SQLException {
         p_nEditMode = EditMode.UNKNOWN;
