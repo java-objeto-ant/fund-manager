@@ -471,7 +471,9 @@ public class IncentiveReportNew {
         }
         //incentive
         if (p_oCategory != null) {
-            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " d.sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
+            if (!getCategory("sInctveCD").toString().equals("000")) {
+                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " d.sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
+            }
         }
         //area
         if (p_oBranchArea != null) {
@@ -557,6 +559,14 @@ public class IncentiveReportNew {
 
             } else if (p_nTranStat == 7) {//release
                 lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sBatchNox <>  ''");
+            }
+        }
+
+        if (p_oCategory != null) {
+            if (getCategory("sInctveCD").toString().equals("000")) {
+                return lsSQLIncentives;
+            } else if (getCategory("sInctveCD").toString().equals("999")) {
+                return lsSQLDeduction;
             }
         }
         return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
@@ -1242,8 +1252,13 @@ public class IncentiveReportNew {
                 + " SELECT "
                 + " '999' sInctveCD "
                 + " , 'Deduction' xxColName"
+                + " , '1' cRecdStat "
+                + " UNION "
+                + " SELECT "
+                + " '000' sInctveCD "
+                + " , 'Incentive w/Deduction' xxColName"
                 + " , '1' cRecdStat ) Incentive_Category "
-                + " WHERE cRecdStat = '1' ";
+                + " WHERE cRecdStat = '1' ORDER BY sInctveCD";
 
         return lsSQL;
     }
