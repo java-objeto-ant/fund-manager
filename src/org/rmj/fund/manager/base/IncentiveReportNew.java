@@ -653,7 +653,10 @@ public class IncentiveReportNew {
 
         //remove other incentive type 
         if (p_oCategory != null) {
-            lsSQL = lsSQL + " WHERE sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD"));
+            if (!getCategory("sInctveCD").toString().equals("000")) {
+                lsSQL = lsSQL + " WHERE sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD"));
+            }
+
         }
 //      
         lsSQL = lsSQL + lsCondition + " ORDER BY sTransNox,sBranchCD,"
@@ -1256,7 +1259,7 @@ public class IncentiveReportNew {
                 + " UNION "
                 + " SELECT "
                 + " '000' sInctveCD "
-                + " , 'Incentive w/Deduction' xxColName"
+                + " , 'Incentive w/o Deduction' xxColName"
                 + " , '1' cRecdStat ) Incentive_Category "
                 + " WHERE cRecdStat = '1' ORDER BY sInctveCD";
 
