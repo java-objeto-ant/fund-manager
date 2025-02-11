@@ -1743,85 +1743,90 @@ public class IncentiveReportNew {
                 headerRow = sheet.createRow(1);
             }
             String[] headers;
-            if (!getCategory("sInctveCD").toString().equalsIgnoreCase("999")) {
-                // Set Header Row
-                headers = new String[]{
-                    "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
-                    "EMPLOYEE NAME", "POSITION", "INCENTIVE TYPE", "ACTUAL AMOUNT INCENTIVE",
-                    "ACTUAL INCENTIVE AMOUNT ENCODED", "ALLOCATED PERCENTAGE",
-                    "ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE",
-                    "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
-                };
-            } else {
-                // Set Header Row
-                headers = new String[]{
-                    "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
-                    "EMPLOYEE NAME", "POSITION", "DEDUCTION TYPE", "ACTUAL AMOUNT DEDUCTION",
-                    "ACTUAL DEDUCTION AMOUNT ENCODED", "ALLOCATED DEDUCTION PERCENTAGE",
-                    "ALLOCATED DEDUCTION AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED  DEDUCTION AMOUNT PER EMPLOYEE",
-                    "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
-                };
-            }
+            if (getCategory() != null) {
+                try {
+                    if (getCategory("sInctveCD").toString().equalsIgnoreCase("999")) {
 
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
+                        // Set Header Row
+                        headers = new String[]{
+                            "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
+                            "EMPLOYEE NAME", "POSITION", "DEDUCTION TYPE", "ACTUAL AMOUNT DEDUCTION",
+                            "ACTUAL DEDUCTION AMOUNT ENCODED", "ALLOCATED DEDUCTION PERCENTAGE",
+                            "ALLOCATED DEDUCTION AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED  DEDUCTION AMOUNT PER EMPLOYEE",
+                            "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
+                        };
+                    } else {
+                        headers = new String[]{
+                            "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
+                            "EMPLOYEE NAME", "POSITION", "INCENTIVE TYPE", "ACTUAL AMOUNT INCENTIVE",
+                            "ACTUAL INCENTIVE AMOUNT ENCODED", "ALLOCATED PERCENTAGE",
+                            "ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE",
+                            "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
 
-            // Data Population
-            p_oRecordProcessed.beforeFirst(); // Reset cursor
-            while (p_oRecordProcessed.next()) {
-                Row newDetailRow = sheet.createRow(++lnLastRow);
-
-                Date ldDatePeriod = SQLUtil.toDate(
-                        p_oRecordProcessed.getString("sMonthxxx").trim() + " 01", "yyyyMM dd"
-                );
-
-                newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
-                newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
-                newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sTransNox"));
-                newDetailRow.createCell(3).setCellValue((String) CommonUtils.dateFormat(ldDatePeriod, "yyyy MMMM")); // Format Date properly
-                newDetailRow.createCell(4).setCellValue(p_oRecordProcessed.getString("sEmployID"));
-                newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
-                newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
-                newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
-                newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
-                newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
-                newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
-                newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
-                newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
-                newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
-                newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
-                newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
-            }
-
-            // File Save Dialog
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-            fileChooser.setTitle("Save the exported File");
-            fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("Excel Files", "*.xlsx")
-            );
-            File selectedFile = fileChooser.showSaveDialog(fsParentWindow);
-
-            if (selectedFile != null) {
-                if (!selectedFile.getName().toLowerCase().endsWith(".xlsx")) {
-                    selectedFile = new File(selectedFile.getAbsolutePath() + ".xlsx");
+                        }
+                    }catch (SQLException ex) {
+                    Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
-                try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
-                    workbook.write(fos);
-                    ShowMessageFX.Information(null, "Exporting of report is successful", "Incentive's Report Export", null);
-                    return true;
-                } catch (IOException ex) {
-                    p_sMessage = "Failed to save the file: " + ex.getMessage();
+                    for (int i = 0; i < headers.length; i++) {
+                        headerRow.createCell(i).setCellValue(headers[i]);
+                    }
+
+                    // Data Population
+                    p_oRecordProcessed.beforeFirst(); // Reset cursor
+                    while (p_oRecordProcessed.next()) {
+                        Row newDetailRow = sheet.createRow(++lnLastRow);
+
+                        Date ldDatePeriod = SQLUtil.toDate(
+                                p_oRecordProcessed.getString("sMonthxxx").trim() + " 01", "yyyyMM dd"
+                        );
+
+                        newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
+                        newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
+                        newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sTransNox"));
+                        newDetailRow.createCell(3).setCellValue((String) CommonUtils.dateFormat(ldDatePeriod, "yyyy MMMM")); // Format Date properly
+                        newDetailRow.createCell(4).setCellValue(p_oRecordProcessed.getString("sEmployID"));
+                        newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
+                        newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
+                        newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
+                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
+                        newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
+                        newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
+                        newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
+                        newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
+                        newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
+                        newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
+                        newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
+                    }
+
+                    // File Save Dialog
+                    FileChooser fileChooser = new FileChooser();
+                    fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+                    fileChooser.setTitle("Save the exported File");
+                    fileChooser.getExtensionFilters().add(
+                            new FileChooser.ExtensionFilter("Excel Files", "*.xlsx")
+                    );
+                    File selectedFile = fileChooser.showSaveDialog(fsParentWindow);
+
+                    if (selectedFile != null) {
+                        if (!selectedFile.getName().toLowerCase().endsWith(".xlsx")) {
+                            selectedFile = new File(selectedFile.getAbsolutePath() + ".xlsx");
+                        }
+
+                        try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
+                            workbook.write(fos);
+                            ShowMessageFX.Information(null, "Exporting of report is successful", "Incentive's Report Export", null);
+                            return true;
+                        } catch (IOException ex) {
+                            p_sMessage = "Failed to save the file: " + ex.getMessage();
+                            return false;
+                        }
+                    } else {
+                        return true; // User canceled save dialog
+                    }
+                } catch (IOException | SQLException e) {
+                    p_sMessage = "An error occurred: " + e.getMessage();
                     return false;
                 }
-            } else {
-                return true; // User canceled save dialog
             }
-        } catch (IOException | SQLException e) {
-            p_sMessage = "An error occurred: " + e.getMessage();
-            return false;
         }
-    }
-}
