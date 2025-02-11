@@ -1707,7 +1707,7 @@ public class IncentiveReportNew {
                 try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
                     workbook.write(fos);
                     workbook.close();
-                    ShowMessageFX.Information(null, "Exporting of report is successful", "Incentive's Report Export", null);
+                    ShowMessageFX.Information(null, "Exporting of report is successful", "Report Export", null);
                     return true;
                 } catch (IOException ex) {
                     p_sMessage = ex.getMessage();
@@ -1742,15 +1742,27 @@ public class IncentiveReportNew {
             if (headerRow == null) {
                 headerRow = sheet.createRow(1);
             }
+            String[] headers;
+            if (!getCategory("sInctveCD").toString().equalsIgnoreCase("999")) {
+                // Set Header Row
+                headers = new String[]{
+                    "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
+                    "EMPLOYEE NAME", "POSITION", "INCENTIVE TYPE", "ACTUAL AMOUNT INCENTIVE",
+                    "ACTUAL INCENTIVE AMOUNT ENCODED", "ALLOCATED PERCENTAGE",
+                    "ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE",
+                    "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
+                };
+            } else {
+                // Set Header Row
+                headers = new String[]{
+                    "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
+                    "EMPLOYEE NAME", "POSITION", "DEDUCTION TYPE", "ACTUAL AMOUNT DEDUCTION",
+                    "ACTUAL DEDUCTION AMOUNT ENCODED", "ALLOCATED DEDUCTION PERCENTAGE",
+                    "ALLOCATED DEDUCTION AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED  DEDUCTION AMOUNT PER EMPLOYEE",
+                    "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
+                };
+            }
 
-            // Set Header Row
-            String[] headers = {
-                "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
-                "EMPLOYEE NAME", "POSITION", "INCENTIVE TYPE", "ACTUAL AMOUNT INCENTIVE",
-                "ACTUAL INCENTIVE AMOUNT ENCODED", "ALLOCATED PERCENTAGE",
-                "ALLOCATED AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED AMOUNT PER EMPLOYEE",
-                "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
-            };
             for (int i = 0; i < headers.length; i++) {
                 headerRow.createCell(i).setCellValue(headers[i]);
             }
