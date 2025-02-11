@@ -481,7 +481,9 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat != 7) {
+                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            }
             if (p_nTranStat == 1) {
                 if (!p_bAuditApproval) {
                     lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.cApprovd2 =  " + SQLUtil.toSQL(0));
@@ -549,7 +551,9 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat != 7) {
+                lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            }
             if (p_nTranStat == 1) {
                 if (!p_bAuditApproval) {
                     lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.cApprovd2 =  " + SQLUtil.toSQL(0));
@@ -558,7 +562,7 @@ public class IncentiveReportNew {
                 }
 
             } else if (p_nTranStat == 7) {//release
-                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sBatchNox <>  ''");
+                lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sBatchNox <>  ''");
             }
         }
 
@@ -606,7 +610,9 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsCondition = MiscUtil.addCondition(lsCondition, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat != 7) {
+                lsCondition = MiscUtil.addCondition(lsCondition, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            }
             if (p_nTranStat == 1) {
                 if (!p_bAuditApproval) {
                     lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(0));
@@ -1261,7 +1267,7 @@ public class IncentiveReportNew {
                 + " '000' sInctveCD "
                 + " , 'Incentive w/o Deduction' xxColName"
                 + " , '1' cRecdStat ) Incentive_Category "
-                + " WHERE cRecdStat = '1' ORDER BY sInctveCD";
+                + " WHERE cRecdStat = '1' ";
 
         return lsSQL;
     }
