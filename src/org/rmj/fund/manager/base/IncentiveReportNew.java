@@ -479,7 +479,9 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat != 7) {
+                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            }
             if (p_nTranStat == 1) {
                 if (!p_bAuditApproval) {
                     lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.cApprovd2 =  " + SQLUtil.toSQL(0));
@@ -547,7 +549,9 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat != 7) {
+                lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            }
             if (p_nTranStat == 1) {
                 if (!p_bAuditApproval) {
                     lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.cApprovd2 =  " + SQLUtil.toSQL(0));
@@ -556,10 +560,21 @@ public class IncentiveReportNew {
                 }
 
             } else if (p_nTranStat == 7) {//release
-                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " a.sBatchNox <>  ''");
+                lsSQLDeduction = MiscUtil.addCondition(lsSQLDeduction, " a.sBatchNox <>  ''");
             }
         }
-        return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
+
+        if (p_oCategory == null) {
+            return lsSQLIncentives;
+        } else {
+            if (!getCategory("sInctveCD").toString().equals("999")) {
+                return lsSQLIncentives;
+            } else {
+                return lsSQLDeduction;
+            }
+        }
+
+//        return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
     }
 
     public boolean OpenRecord(String fsValue, boolean isByBranch) throws SQLException {
@@ -596,7 +611,9 @@ public class IncentiveReportNew {
         }
         //ctranstat
         if (p_nTranStat >= 0) {
-            lsCondition = MiscUtil.addCondition(lsCondition, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            if (p_nTranStat != 7) {
+                lsCondition = MiscUtil.addCondition(lsCondition, " cTranStat =  " + SQLUtil.toSQL(p_nTranStat));
+            }
             if (p_nTranStat == 1) {
                 if (!p_bAuditApproval) {
                     lsCondition = MiscUtil.addCondition(lsCondition, " cApprovd2 =  " + SQLUtil.toSQL(0));
@@ -644,6 +661,7 @@ public class IncentiveReportNew {
         //remove other incentive type 
         if (p_oCategory != null) {
             lsSQL = lsSQL + " WHERE sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD"));
+
         }
 //      
         lsSQL = lsSQL + lsCondition + " ORDER BY sTransNox,sBranchCD,"
@@ -813,9 +831,11 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
 
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -902,9 +922,11 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
 
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -998,9 +1020,11 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
 
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -1028,8 +1052,10 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -1242,7 +1268,7 @@ public class IncentiveReportNew {
                 + " SELECT "
                 + " '999' sInctveCD "
                 + " , 'Deduction' xxColName"
-                + " , '1' cRecdStat ) Incentive_Category "
+                + " , '1' cRecdStat) Incentive_Category "
                 + " WHERE cRecdStat = '1' ";
 
         return lsSQL;
@@ -1681,7 +1707,7 @@ public class IncentiveReportNew {
                 try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
                     workbook.write(fos);
                     workbook.close();
-                    ShowMessageFX.Information(null, "Exporting of report is successful", "Incentive's Report Export", null);
+                    ShowMessageFX.Information(null, "Exporting of report is successful", "Report Export", null);
                     return true;
                 } catch (IOException ex) {
                     p_sMessage = ex.getMessage();
@@ -1705,32 +1731,41 @@ public class IncentiveReportNew {
             return false;
         }
 
-        String templateFilePath = "D:\\GGC_Java_Systems\\temp\\IncentiveTemplateExport.xlsx";
-
-        try (FileInputStream fis = new FileInputStream(templateFilePath); XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
-
-            XSSFSheet sheet = workbook.getSheetAt(0);
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("Exported Data");
             int lnLastRow = sheet.getLastRowNum();
 
-            Row headerRow = sheet.getRow(1);
+            Row headerRow = sheet.getRow(0);
             if (headerRow == null) {
-                headerRow = sheet.createRow(1);
+                headerRow = sheet.createRow(0);
             }
-
-            // Set Header Row
-            String[] headers = {
+            String[] headers;
+            headers = new String[]{
                 "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
                 "EMPLOYEE NAME", "POSITION", "INCENTIVE TYPE", "ACTUAL AMOUNT INCENTIVE",
-                "ACTUAL INCENTIVE AMOUNT ENCODED", "ALLOCATED PERCENTAGE",
-                "ALLOCATED AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED AMOUNT PER EMPLOYEE",
+                "ACTUAL INCENTIVE AMOUNT ENCODED", "ALLOCATED INCENTIVE PERCENTAGE",
+                "ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED INCENTIVE AMOUNT PER EMPLOYEE",
                 "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
+
             };
+            if (getCategory() != null) {
+                if (getCategory("sInctveCD").toString().equalsIgnoreCase("999")) {
+
+                    // Set Header Row
+                    headers = new String[]{
+                        "AREA", "BRANCH", "TRANSACTION NO.", "PERIOD", "EMPLOYEE ID",
+                        "EMPLOYEE NAME", "POSITION", "DEDUCTION TYPE", "ACTUAL AMOUNT DEDUCTION",
+                        "ACTUAL DEDUCTION AMOUNT ENCODED", "ALLOCATED DEDUCTION PERCENTAGE",
+                        "ALLOCATED DEDUCTION AMOUNT PER EMPLOYEE", "TOTAL ALLOCATED  DEDUCTION AMOUNT PER EMPLOYEE",
+                        "BRANCH STATUS", "COLLECTION STATUS", "AUDIT STATUS"
+                    };
+                }
+            }
             for (int i = 0; i < headers.length; i++) {
                 headerRow.createCell(i).setCellValue(headers[i]);
             }
 
-            // Data Population
-            p_oRecordProcessed.beforeFirst(); // Reset cursor
+            p_oRecordProcessed.beforeFirst();
             while (p_oRecordProcessed.next()) {
                 Row newDetailRow = sheet.createRow(++lnLastRow);
 
