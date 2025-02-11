@@ -1731,16 +1731,13 @@ public class IncentiveReportNew {
             return false;
         }
 
-        String templateFilePath = "D:\\GGC_Java_Systems\\temp\\IncentiveTemplateExport.xlsx";
-
-        try (FileInputStream fis = new FileInputStream(templateFilePath); XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
-
-            XSSFSheet sheet = workbook.getSheetAt(0);
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("Exported Data");
             int lnLastRow = sheet.getLastRowNum();
 
-            Row headerRow = sheet.getRow(1);
+            Row headerRow = sheet.getRow(0);
             if (headerRow == null) {
-                headerRow = sheet.createRow(1);
+                headerRow = sheet.createRow(0);
             }
             String[] headers;
             headers = new String[]{
@@ -1768,8 +1765,7 @@ public class IncentiveReportNew {
                 headerRow.createCell(i).setCellValue(headers[i]);
             }
 
-            // Data Population
-            p_oRecordProcessed.beforeFirst(); // Reset cursor
+            p_oRecordProcessed.beforeFirst();
             while (p_oRecordProcessed.next()) {
                 Row newDetailRow = sheet.createRow(++lnLastRow);
 
