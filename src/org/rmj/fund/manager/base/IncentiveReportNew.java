@@ -471,9 +471,7 @@ public class IncentiveReportNew {
         }
         //incentive
         if (p_oCategory != null) {
-            if (!getCategory("sInctveCD").toString().equals("000")) {
-                lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " d.sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
-            }
+            lsSQLIncentives = MiscUtil.addCondition(lsSQLIncentives, " d.sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD")));
         }
         //area
         if (p_oBranchArea != null) {
@@ -566,14 +564,17 @@ public class IncentiveReportNew {
             }
         }
 
-        if (p_oCategory != null) {
-            if (getCategory("sInctveCD").toString().equals("000")) {
+        if (p_oCategory == null) {
+            return lsSQLIncentives;
+        } else {
+            if (!getCategory("sInctveCD").toString().equals("999")) {
                 return lsSQLIncentives;
-            } else if (getCategory("sInctveCD").toString().equals("999")) {
+            } else {
                 return lsSQLDeduction;
             }
         }
-        return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
+
+//        return lsSQLIncentives + " UNION ALL " + lsSQLDeduction;
     }
 
     public boolean OpenRecord(String fsValue, boolean isByBranch) throws SQLException {
@@ -659,9 +660,7 @@ public class IncentiveReportNew {
 
         //remove other incentive type 
         if (p_oCategory != null) {
-            if (!getCategory("sInctveCD").toString().equals("000")) {
-                lsSQL = lsSQL + " WHERE sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD"));
-            }
+            lsSQL = lsSQL + " WHERE sInctveCD = " + SQLUtil.toSQL(getCategory("sInctveCD"));
 
         }
 //      
@@ -832,9 +831,11 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
 
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -921,9 +922,11 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
 
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -1017,9 +1020,11 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
 
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -1047,8 +1052,10 @@ public class IncentiveReportNew {
             }
 
             return true;
+
         } catch (SQLException ex) {
-            Logger.getLogger(IncentiveReportNew.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IncentiveReportNew.class
+                    .getName()).log(Level.SEVERE, null, ex);
             p_sMessage = ex.getMessage();
             return false;
         }
@@ -1261,12 +1268,7 @@ public class IncentiveReportNew {
                 + " SELECT "
                 + " '999' sInctveCD "
                 + " , 'Deduction' xxColName"
-                + " , '1' cRecdStat "
-                + " UNION "
-                + " SELECT "
-                + " '000' sInctveCD "
-                + " , 'Incentive w/o Deduction' xxColName"
-                + " , '1' cRecdStat ) Incentive_Category "
+                + " , '1' cRecdStat) Incentive_Category "
                 + " WHERE cRecdStat = '1' ";
 
         return lsSQL;
