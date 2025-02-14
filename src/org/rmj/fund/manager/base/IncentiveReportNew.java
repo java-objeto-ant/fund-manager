@@ -1787,16 +1787,16 @@ public class IncentiveReportNew {
                         newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
                         newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
                         newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyGoalx"));
-                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyActlx"));
-                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtGoalx"));
-                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
-                        newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
-                        newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
-                        newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
-                        newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
-                        newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
-                        newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
-                        newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
+                        newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nQtyActlx"));
+                        newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAmtGoalx"));
+                        newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
+                        newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
+                        newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
+                        newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
+                        newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
+                        newDetailRow.createCell(16).setCellValue(p_oRecordProcessed.getString("cTranStat"));
+                        newDetailRow.createCell(17).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
+                        newDetailRow.createCell(18).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
                     }
                 } else {//deduction
                     while (p_oRecordProcessed.next()) {
@@ -1841,16 +1841,16 @@ public class IncentiveReportNew {
                     newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
                     newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
                     newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyGoalx"));
-                    newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyActlx"));
-                    newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtGoalx"));
-                    newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
-                    newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
-                    newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
-                    newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
-                    newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
-                    newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
-                    newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
-                    newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
+                    newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nQtyActlx"));
+                    newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAmtGoalx"));
+                    newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
+                    newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
+                    newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
+                    newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
+                    newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
+                    newDetailRow.createCell(16).setCellValue(p_oRecordProcessed.getString("cTranStat"));
+                    newDetailRow.createCell(17).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
+                    newDetailRow.createCell(18).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
                 }
             }
 
