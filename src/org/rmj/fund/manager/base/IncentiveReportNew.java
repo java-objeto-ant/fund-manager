@@ -1769,8 +1769,62 @@ public class IncentiveReportNew {
             }
 
             p_oRecordProcessed.beforeFirst();
-            //incentive's
-            if (!getCategory("sInctveCD").toString().equalsIgnoreCase("999")) {
+            if (getCategory() != null) {
+                if (!getCategory("sInctveCD").toString().equalsIgnoreCase("999")) {
+                    while (p_oRecordProcessed.next()) {
+                        Row newDetailRow = sheet.createRow(++lnLastRow);
+
+                        Date ldDatePeriod = SQLUtil.toDate(
+                                p_oRecordProcessed.getString("sMonthxxx").trim() + " 01", "yyyyMM dd"
+                        );
+
+                        newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
+                        newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
+                        newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sTransNox"));
+                        newDetailRow.createCell(3).setCellValue((String) CommonUtils.dateFormat(ldDatePeriod, "yyyy MMMM")); // Format Date properly
+                        newDetailRow.createCell(4).setCellValue(p_oRecordProcessed.getString("sEmployID"));
+                        newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
+                        newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
+                        newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
+                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyGoalx"));
+                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyActlx"));
+                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtGoalx"));
+                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
+                        newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
+                        newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
+                        newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
+                        newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
+                        newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
+                        newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
+                        newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
+                    }
+                } else {//deduction
+                    while (p_oRecordProcessed.next()) {
+                        Row newDetailRow = sheet.createRow(++lnLastRow);
+
+                        Date ldDatePeriod = SQLUtil.toDate(
+                                p_oRecordProcessed.getString("sMonthxxx").trim() + " 01", "yyyyMM dd"
+                        );
+
+                        newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
+                        newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
+                        newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sTransNox"));
+                        newDetailRow.createCell(3).setCellValue((String) CommonUtils.dateFormat(ldDatePeriod, "yyyy MMMM")); // Format Date properly
+                        newDetailRow.createCell(4).setCellValue(p_oRecordProcessed.getString("sEmployID"));
+                        newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
+                        newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
+                        newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
+                        newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
+                        newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
+                        newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
+                        newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
+                        newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
+                        newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
+                        newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
+                        newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
+                    }
+                }
+            } else {
                 while (p_oRecordProcessed.next()) {
                     Row newDetailRow = sheet.createRow(++lnLastRow);
 
@@ -1789,31 +1843,6 @@ public class IncentiveReportNew {
                     newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyGoalx"));
                     newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nQtyActlx"));
                     newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtGoalx"));
-                    newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
-                    newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
-                    newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
-                    newDetailRow.createCell(11).setCellValue(p_oRecordProcessed.getDouble("nAllcAmtx"));
-                    newDetailRow.createCell(12).setCellValue(p_oRecordProcessed.getDouble("xTAllcAmt"));
-                    newDetailRow.createCell(13).setCellValue(p_oRecordProcessed.getString("cTranStat"));
-                    newDetailRow.createCell(14).setCellValue(p_oRecordProcessed.getString("cApprovd1"));
-                    newDetailRow.createCell(15).setCellValue(p_oRecordProcessed.getString("cApprovd2"));
-                }
-            } else {//deduction
-                while (p_oRecordProcessed.next()) {
-                    Row newDetailRow = sheet.createRow(++lnLastRow);
-
-                    Date ldDatePeriod = SQLUtil.toDate(
-                            p_oRecordProcessed.getString("sMonthxxx").trim() + " 01", "yyyyMM dd"
-                    );
-
-                    newDetailRow.createCell(0).setCellValue(p_oRecordProcessed.getString("sAreaDesc"));
-                    newDetailRow.createCell(1).setCellValue(p_oRecordProcessed.getString("sBranchNm"));
-                    newDetailRow.createCell(2).setCellValue(p_oRecordProcessed.getString("sTransNox"));
-                    newDetailRow.createCell(3).setCellValue((String) CommonUtils.dateFormat(ldDatePeriod, "yyyy MMMM")); // Format Date properly
-                    newDetailRow.createCell(4).setCellValue(p_oRecordProcessed.getString("sEmployID"));
-                    newDetailRow.createCell(5).setCellValue(p_oRecordProcessed.getString("sCompnyNm"));
-                    newDetailRow.createCell(6).setCellValue(p_oRecordProcessed.getString("sPositnNm"));
-                    newDetailRow.createCell(7).setCellValue(p_oRecordProcessed.getString("sInctveDs"));
                     newDetailRow.createCell(8).setCellValue(p_oRecordProcessed.getDouble("nAmtActlx"));
                     newDetailRow.createCell(9).setCellValue(p_oRecordProcessed.getDouble("nInctvAmt"));
                     newDetailRow.createCell(10).setCellValue(p_oRecordProcessed.getDouble("nAllcPerc"));
