@@ -555,8 +555,7 @@ public class Incentive {
         } else {
             lsSQL = MiscUtil.addCondition(lsSQL, "c.sBranchNm LIKE " + SQLUtil.toSQL(fsValue + "%"));
         }
-
-//        System.out.println("search = " + lsSQL);
+        System.out.println("search = " + lsSQL);
         if (p_bWithUI) {
             JSONObject loJSON = showFXDialog.jsonSearch(
                     p_oApp,
@@ -1076,6 +1075,7 @@ public class Incentive {
         String lsTransNox = (String) getMaster("sTransNox");
         String lsSQL = "UPDATE Incentive_Master SET"
                 + "  cApprovd1 = '1'"
+                + ", cTranStat = '1'"
                 + ", sApprovd1 = " + SQLUtil.toSQL(p_oApp.getUserID())
                 + ", dApprovd1 = " + SQLUtil.toSQL(p_oApp.getServerDate())
                 + " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
@@ -3262,7 +3262,13 @@ public class Incentive {
 
             lsCondition = " AND a.cTranStat IN (" + lsCondition.substring(2) + ")";
         } else {
-            lsCondition = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
+            //she 2025-02-10 added this condition as requested by mam loraine
+             if (p_oApp.getDepartment().equals(COLLECTION)) {
+                lsCondition = " AND a.cTranStat IN('0','1')" ;
+             } else {
+                lsCondition = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
+                }
+//            lsCondition = " AND a.cTranStat = " + SQLUtil.toSQL(lsStat);
 
         }
         if (MAIN_OFFICE.contains(p_oApp.getBranchCode())) {
