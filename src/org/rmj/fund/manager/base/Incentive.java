@@ -867,6 +867,14 @@ public class Incentive {
                 p_sMessage = "Unable to approve unconfirmed transactions.";
                 return false;
             }
+            //she 2025-02-19 as requested by madam loraine to confirm all encoded by sir arnold
+            if (System.getProperty(REQUIRE_CSS).equals("1")) {
+                if (((String) getMaster("cApprovd1")).equals("0")) {
+                    if (getMaster("sTransNox").toString().contains("M0W1")) {
+                        return ApprovedTransactionCSS();
+                    }
+                }
+            }
         }
 
 //        if (((String) getMaster("cTranStat")).equals("0") || 
@@ -1052,10 +1060,10 @@ public class Incentive {
             return false;
         }
 
-        if (((String) getMaster("cTranStat")).equals("0")) {
-            p_sMessage = "Unable to approve unconfirmed transactions.";
-            return false;
-        }
+//        if (((String) getMaster("cTranStat")).equals("0")) {
+//            p_sMessage = "Unable to approve unconfirmed transactions.";
+//            return false;
+//        }
 
         if (((String) getMaster("cTranStat")).equals("2")) {
             p_sMessage = "Unable to approve posted transactions.";
