@@ -27,5 +27,10 @@
             <file>file:/D:/000MNVProject/IntegSys%20Java/fund-manager/src/org/rmj/fund/manager/base/IncentiveReportNew.java</file>
         </group>
         <group name="Incentive System"/>
+        <group name="Incentive Integsys">
+            <file>file:/D:/GMC_SEG_Folder%20-%20Maven/Integsys/fund-manager/src/org/rmj/fund/manager/base/IncentiveReleaseNew.java</file>
+            <file>file:/D:/GMC_SEG_Folder%20-%20Maven/Integsys/fund-manager/src/org/rmj/fund/manager/parameters/IncentiveBankInfo.java</file>
+            <file>file:/D:/GMC_SEG_Folder%20-%20Maven/Integsys/fund-manager/src/org/rmj/fund/manager/base/Incentive.java</file>
+        </group>
     </open-files>
 </project-private>
