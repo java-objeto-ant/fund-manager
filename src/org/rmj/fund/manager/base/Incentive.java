@@ -198,7 +198,7 @@ public class Incentive {
                 p_oDetail.updateObject("nEntryNox", lnCtr);
                 p_oDetail.updateRow();
 
-                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Incentive_Detail", "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear;xIncentve;xDeductnx;cRecdStat");
+                lsSQL = MiscUtil.rowset2SQL(p_oDetail, "Incentive_Detail", "xEmployNm;xEmpLevNm;xPositnNm;xSrvcYear;xIncentve;xDeductnx;cRecdStat;xStartEmp;");
 
                 if (p_oApp.executeQuery(lsSQL, "Incentive_Detail", p_sBranchCd, lsTransNox.substring(0, 4)) <= 0) {
                     if (!p_bWithParent) {
