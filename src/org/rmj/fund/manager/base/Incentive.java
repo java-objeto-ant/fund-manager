@@ -2707,6 +2707,11 @@ public class Incentive {
         meta.setColumnName(11, "cRecdStat");
         meta.setColumnLabel(11, "cRecdStat");
         meta.setColumnType(11, Types.CHAR);
+        
+        
+        meta.setColumnName(12, "xStartEmp");
+        meta.setColumnLabel(12, "xStartEmp");
+        meta.setColumnType(12, Types.DATE);
 
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);
@@ -3173,6 +3178,7 @@ public class Incentive {
                 + ", 0.00 xIncentve"
                 + ", 0.00 xDeductnx"
                 + ", b.cRecdStat"
+                + ", IFNULL(b.dStartEmp, b.dHiredxxx) xStartEmp "
                 + " FROM Incentive_Detail a"
                 + ", Employee_Master001 b"
                 + " LEFT JOIN Client_Master c ON b.sEmployID = c.sClientID"
